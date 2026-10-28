@@ -1,0 +1,1250 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Relatório de Campo</title>
+<meta name="theme-color" content="#1D5CFF">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Relatório">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" href="icon-192.png">
+<style>
+:root{
+  --bg:#F2F4F7; --surface:#FFFFFF; --surface2:#EEF1F5; --text:#0F172A; --muted:#64748B; --line:#E4E8EE;
+  --accent:#1D5CFF; --accent-2:#1446D8; --accent-ink:#FFFFFF; --accent-text:#1D5CFF; --accent-soft:#E9F0FF;
+  --ok:#16A34A; --ok-soft:#E8F7EE; --bad:#E11D48; --bad-soft:#FDECEF; --warn:#D97706; --warn-soft:#FDF3E3; --dim:#94A3B8;
+  --shadow:0 1px 2px rgba(15,23,42,.06),0 1px 1px rgba(15,23,42,.03);
+  color-scheme:light; box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0E1116; --surface:#171B22; --surface2:#212733; --text:#E8ECF2; --muted:#94A0B1; --line:#283040;
+    --accent:#3D6EFF; --accent-2:#1F47C9; --accent-text:#86A6FF; --accent-soft:#1A2747;
+    --ok:#34C46E; --ok-soft:#143022; --bad:#FF5A7A; --bad-soft:#3A1720; --warn:#F2A33A; --warn-soft:#3A2A12; --dim:#6B778A;
+    --shadow:none; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0E1116; --surface:#171B22; --surface2:#212733; --text:#E8ECF2; --muted:#94A0B1; --line:#283040;
+  --accent:#3D6EFF; --accent-2:#1F47C9; --accent-text:#86A6FF; --accent-soft:#1A2747;
+  --ok:#34C46E; --ok-soft:#143022; --bad:#FF5A7A; --bad-soft:#3A1720; --warn:#F2A33A; --warn-soft:#3A2A12; --dim:#6B778A;
+  --shadow:none; color-scheme:dark;
+}
+*,*::before,*::after{box-sizing:inherit}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--text);
+  font-family:-apple-system,"SF Pro Text","Inter",BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
+  font-size:16px;line-height:1.45;-webkit-tap-highlight-color:transparent;-webkit-font-smoothing:antialiased}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--surface)}
+body[data-view="home"]::before{background:var(--accent)}
+body[data-view="folder"]::before,body[data-view="pend"]::before,body[data-view="more"]::before{background:var(--bg)}
+button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer}
+button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+img{max-width:100%;display:block}
+
+/* cabeçalho das telas de detalhe */
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--surface);
+  display:flex;align-items:center;gap:4px;padding:6px 6px;min-height:56px;border-bottom:1px solid var(--line)}
+.top h1{flex:1;margin:0;font-size:14.5px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;text-align:center;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.top .sub{display:block;font-size:12px;font-weight:500;color:var(--muted);letter-spacing:0;text-transform:none;overflow:hidden;text-overflow:ellipsis}
+.icon-btn{width:44px;height:44px;display:grid;place-items:center;border-radius:12px;flex:none}
+.icon-btn:active{background:var(--surface2)}
+.icon-btn svg{width:22px;height:22px}
+.icon-btn.sm{width:36px;height:36px}
+.icon-btn.sm svg{width:19px;height:19px}
+
+main{padding:12px 16px 120px;max-width:760px;margin:0 auto}
+
+/* telas com abas: título grande */
+.ltitle{padding:18px 4px 12px;display:flex;align-items:flex-end;gap:10px}
+.ltitle div{flex:1;min-width:0}
+.ltitle h1{margin:0;font-size:27px;font-weight:700;letter-spacing:-.02em}
+.ltitle p{margin:2px 0 0;font-size:14px;color:var(--muted)}
+
+/* início */
+.hero{background:linear-gradient(165deg,var(--accent) 0%,var(--accent-2) 100%);color:#fff;
+  padding:14px 18px 62px;border-radius:0 0 28px 28px}
+.hero .bar{display:flex;align-items:center;gap:12px;max-width:760px;margin:0 auto}
+.avatar{width:44px;height:44px;border-radius:50%;background:rgba(255,255,255,.2);display:grid;place-items:center;font-weight:700;font-size:16px;flex:none;border:1.5px solid rgba(255,255,255,.45)}
+.hero .hi{flex:1;min-width:0}
+.hero .hi small{display:block;font-size:12.5px;opacity:.85}
+.hero .hi b{display:block;font-size:21px;font-weight:700;letter-spacing:-.01em}
+.hero .co{max-width:760px;margin:12px auto 0;font-size:13px;opacity:.9;display:flex;align-items:center;gap:6px}
+.hero .co svg{width:16px;height:16px}
+.hero .icon-btn{color:#fff;background:rgba(255,255,255,.14)}
+.quick{display:grid;grid-template-columns:1fr 1fr;gap:10px;max-width:728px;margin:-44px auto 0;padding:0 16px;position:relative}
+.qa{background:var(--surface);border-radius:16px;padding:14px;box-shadow:0 6px 18px rgba(15,23,42,.08);display:flex;flex-direction:column;align-items:flex-start;gap:10px;text-align:left;font-weight:600;font-size:14.5px}
+.qa:active{transform:scale(.98)}
+.qa i{width:34px;height:34px;border-radius:10px;background:var(--accent-soft);color:var(--accent-text);display:grid;place-items:center}
+.qa i svg{width:19px;height:19px}
+
+.sec{display:flex;justify-content:space-between;align-items:center;margin:24px 2px 10px}
+.sec h2{margin:0;font-size:16.5px;font-weight:700}
+.sec .link{font-size:13.5px;font-weight:600;color:var(--accent-text);display:inline-flex;align-items:center;gap:2px;min-height:36px}
+.sec .link svg{width:16px;height:16px}
+
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.stat{background:var(--surface);border-radius:14px;padding:12px 12px 10px;box-shadow:var(--shadow);text-align:left}
+.stat b{display:block;font-size:24px;font-weight:700;letter-spacing:-.02em;line-height:1.1}
+.stat span{font-size:12px;color:var(--muted)}
+.prio{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
+.pr{background:var(--surface);border-radius:14px;padding:12px;box-shadow:var(--shadow);display:flex;align-items:center;gap:8px;font-size:13.5px;font-weight:600;text-align:left}
+.pr svg{width:16px;height:16px;flex:none}
+.pr span{flex:1}
+.pr b{font-size:15px;color:var(--text)}
+.pr.bad{color:var(--bad)} .pr.ok{color:var(--ok)} .pr.warn{color:var(--warn)} .pr.blue{color:var(--accent-text)}
+
+/* listas agrupadas */
+.group{background:var(--surface);border-radius:16px;box-shadow:var(--shadow);overflow:hidden;margin-bottom:12px}
+.lrow{display:flex;align-items:center;border-bottom:1px solid var(--line)}
+.lrow:last-child{border-bottom:0}
+.lrow .main{flex:1;min-width:0;display:flex;align-items:center;gap:12px;min-height:58px;padding:8px 8px 8px 14px;text-align:left}
+.lrow .main:active{background:var(--surface2)}
+.ico{width:36px;height:36px;border-radius:10px;display:grid;place-items:center;flex:none;background:var(--surface2);color:var(--muted)}
+.ico svg{width:19px;height:19px}
+.ico.blue{background:var(--accent-soft);color:var(--accent-text)}
+.ico.bad{background:var(--bad-soft);color:var(--bad)}
+.lrow .txt{flex:1;min-width:0}
+.lrow .nm{font-size:15px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lrow .mt{font-size:12.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lrow .mt .bad{color:var(--bad);font-weight:600}
+.lrow .chev{width:18px;height:18px;color:var(--dim);flex:none}
+.lrow .icon-btn{color:var(--dim)}
+.minibar{height:4px;border-radius:2px;background:var(--surface2);margin-top:6px;overflow:hidden;max-width:200px}
+.minibar i{display:block;height:100%;background:var(--accent)}
+
+/* breadcrumb (memória da pasta) */
+.crumbs{background:var(--surface);border-radius:16px;box-shadow:var(--shadow);margin-bottom:14px;overflow:hidden}
+.crumb{display:flex;align-items:center;border-bottom:1px solid var(--line);min-height:44px;padding-right:4px}
+.crumb:last-child{border-bottom:0}
+.crumb .go{flex:1;min-width:0;display:flex;align-items:center;gap:8px;min-height:44px;padding:4px 12px;text-align:left;font-size:14.5px}
+.crumb .go:active{background:var(--surface2)}
+.crumb .go svg{width:18px;height:18px;flex:none;color:var(--muted)}
+.crumb .go span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.crumb.root .go{font-weight:600}
+.crumb.current{background:var(--accent-soft)}
+.crumb.current .go{font-weight:700;color:var(--accent-text)}
+.crumb.current .go svg{color:var(--accent-text)}
+.path{display:flex;gap:4px;align-items:center;overflow-x:auto;scrollbar-width:none;margin:0 0 12px;font-size:13px;color:var(--muted);white-space:nowrap}
+.path button{padding:6px 8px;border-radius:8px;background:var(--surface);border:1px solid var(--line);font-weight:500}
+.path svg{width:14px;height:14px;flex:none;color:var(--dim)}
+
+.chips{display:flex;gap:8px;margin:14px 0 12px;overflow-x:auto;scrollbar-width:none}
+.chip{padding:7px 14px;border-radius:20px;background:var(--surface);font-size:13.5px;font-weight:500;white-space:nowrap;border:1px solid var(--line)}
+.chip[aria-pressed="true"]{background:var(--accent);color:#fff;border-color:var(--accent);font-weight:600}
+
+.card{background:var(--surface);border-radius:16px;box-shadow:var(--shadow);margin-bottom:8px;display:block;width:100%;text-align:left}
+.item{display:flex;gap:14px;padding:10px 12px;align-items:center}
+.item:active{background:var(--surface2)}
+.thumb{width:72px;height:72px;border-radius:12px;flex:none;object-fit:cover;background:var(--surface2)}
+.thumb.empty{display:grid;place-items:center;color:var(--dim);border:1.5px dashed var(--line);background:transparent;font-size:11px}
+.thumb.empty svg{width:24px;height:24px}
+.item .body{min-width:0;flex:1}
+.item .date{font-size:12px;color:var(--muted)}
+.item .title{font-weight:700;font-size:15.5px;margin:1px 0 2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.item .desc{font-size:13.5px;color:var(--muted);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;vertical-align:1px}
+.dot.ok{background:var(--ok)} .dot.anomalia{background:var(--bad)} .dot.none{background:var(--dim)}
+
+.empty-state{text-align:center;padding:36px 18px;color:var(--muted)}
+.empty-state p{max-width:32ch;margin:0 auto 20px}
+.empty-state .ico{margin:0 auto 12px;width:52px;height:52px;border-radius:16px}
+.empty-state .ico svg{width:26px;height:26px}
+.empty-state b{display:block;color:var(--text);font-size:16px;margin-bottom:4px}
+
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:46px;padding:0 18px;border-radius:12px;font-weight:600;font-size:15px}
+.btn svg{width:20px;height:20px}
+.btn.primary{background:var(--accent);color:#fff}
+.btn.ghost{background:var(--surface);border:1px solid var(--line)}
+.btn.danger{background:var(--bad);color:#fff}
+.btn.block{width:100%}
+.btn:disabled{opacity:.5}
+.row{display:flex;gap:10px;flex-wrap:wrap}
+.row>.btn{flex:1}
+
+/* barra de abas */
+.tabs{position:fixed;left:0;right:0;bottom:0;z-index:6;background:var(--surface);border-top:1px solid var(--line);
+  padding:6px 10px calc(6px + env(safe-area-inset-bottom,0px))}
+.tabs-inner{max-width:560px;margin:0 auto;display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.tab{display:flex;flex-direction:column;align-items:center;gap:2px;padding:7px 0 6px;border-radius:14px;font-size:11px;font-weight:500;color:var(--muted)}
+.tab svg{width:22px;height:22px}
+.tab[aria-current="page"]{background:var(--accent-soft);color:var(--accent-text);font-weight:700}
+.fab-float{position:fixed;right:18px;bottom:calc(84px + env(safe-area-inset-bottom,0px));z-index:7;width:58px;height:58px;border-radius:50%;
+  background:var(--accent);color:#fff;display:grid;place-items:center;box-shadow:0 8px 20px rgba(29,92,255,.35)}
+.fab-float svg{width:26px;height:26px}
+.fab-float:active{transform:scale(.95)}
+
+/* barra de ações (relatório e item) */
+.bottom{position:fixed;left:0;right:0;bottom:0;z-index:6;background:var(--surface);border-top:1px solid var(--line);
+  padding:6px 10px env(safe-area-inset-bottom,0px)}
+.bottom-inner{max-width:760px;margin:0 auto;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;min-height:62px}
+.bottom .side{display:flex;gap:4px;align-items:center}
+.bottom .side.right{justify-content:flex-end}
+.text-btn{min-height:44px;padding:0 10px;border-radius:10px;font-weight:600;font-size:14px;color:var(--accent-text);display:inline-flex;align-items:center;gap:6px}
+.text-btn svg{width:19px;height:19px}
+.text-btn:disabled{color:var(--dim)}
+.fab{width:62px;height:62px;border-radius:50%;background:var(--accent);color:#fff;display:grid;place-items:center;
+  margin-top:-30px;box-shadow:0 8px 20px rgba(29,92,255,.35);border:4px solid var(--surface)}
+.fab svg{width:27px;height:27px}
+.fab:active{transform:scale(.96)}
+
+.photos{display:flex;gap:10px;overflow-x:auto;scroll-snap-type:x mandatory;margin:0 -16px 12px;padding:0 16px}
+.photo{position:relative;flex:0 0 100%;scroll-snap-align:center;border-radius:16px;overflow:hidden;background:var(--surface2);margin:0}
+.photos.multi .photo{flex-basis:88%}
+.photo img{width:100%;height:auto;max-height:58vh;object-fit:contain;background:#000}
+.photo .del{position:absolute;top:10px;right:10px;width:40px;height:40px;border-radius:12px;background:rgba(0,0,0,.55);color:#fff;display:grid;place-items:center}
+.photo .del svg{width:20px;height:20px}
+.photo .n{position:absolute;left:10px;bottom:10px;background:rgba(0,0,0,.55);color:#fff;font-size:12px;padding:3px 9px;border-radius:8px}
+.add-photo{border:2px dashed var(--line);border-radius:16px;padding:30px 16px;text-align:center;color:var(--muted);margin-bottom:12px;background:var(--surface)}
+.add-photo svg{width:38px;height:38px;margin:0 auto 8px;display:block;color:var(--dim)}
+.photo-actions{display:flex;gap:10px;margin-bottom:12px}
+.photo-actions .btn{flex:1}
+
+.panel{background:var(--surface);border-radius:16px;padding:16px;margin-bottom:12px;box-shadow:var(--shadow)}
+.field{margin-bottom:16px}
+.field:last-child{margin-bottom:0}
+label.lb,.lb{display:block;font-size:13px;color:var(--text);margin-bottom:6px;font-weight:600}
+.inp{width:100%;font:inherit;font-size:16px;color:var(--text);background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:11px 12px}
+textarea.inp{min-height:120px;resize:vertical;line-height:1.5}
+.counter{text-align:right;font-size:12px;color:var(--muted);margin-top:4px}
+.seg{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.seg button{min-height:46px;border-radius:12px;border:1px solid var(--line);font-weight:600;font-size:14.5px;background:var(--bg)}
+.seg button.ok[aria-pressed="true"]{background:var(--ok-soft);border-color:var(--ok);color:var(--ok)}
+.seg button.anomalia[aria-pressed="true"]{background:var(--bad-soft);border-color:var(--bad);color:var(--bad)}
+.hint{font-size:13px;color:var(--muted);margin:6px 0 0}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+
+.backdrop{position:fixed;inset:0;background:rgba(15,23,42,.45);z-index:20;display:flex;align-items:flex-end;justify-content:center}
+.sheet{position:relative;background:var(--surface);width:100%;max-width:640px;max-height:90vh;overflow:auto;border-radius:22px 22px 0 0;
+  padding:8px 18px calc(18px + env(safe-area-inset-bottom,0px));animation:up .22s ease-out}
+@media (prefers-reduced-motion:reduce){.sheet{animation:none}}
+@keyframes up{from{transform:translateY(30px);opacity:.6}to{transform:none;opacity:1}}
+.grab{width:40px;height:5px;border-radius:3px;background:var(--line);margin:4px auto 12px}
+.sheet-close{position:absolute;top:16px;right:14px;font-size:14px;font-weight:600;color:var(--muted);min-height:36px;padding:0 8px}
+.sheet h2{font-size:19px;font-weight:700;margin:0 70px 14px 0}
+.menu-item{display:flex;align-items:center;gap:14px;width:100%;min-height:52px;padding:0 6px;border-radius:12px;text-align:left;font-size:15.5px;font-weight:500}
+.menu-item:active{background:var(--surface2)}
+.menu-item svg{width:21px;height:21px;color:var(--muted);flex:none}
+.menu-item.danger{color:var(--bad)} .menu-item.danger svg{color:var(--bad)}
+.colchips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.colchips button{font-size:13px;padding:6px 10px;border-radius:8px;background:var(--accent-soft);color:var(--accent-text);font-weight:600}
+.preview{background:var(--bg);border-radius:12px;padding:10px 12px;font-size:14px}
+.preview div{padding:3px 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.preview .more{color:var(--muted)}
+.check{display:flex;gap:10px;align-items:center;font-size:15px;margin:4px 0 14px}
+.check input{width:20px;height:20px;accent-color:var(--accent);flex:none}
+.logo-box{display:flex;align-items:center;gap:12px}
+.logo-box .lg{width:110px;height:54px;border:1px dashed var(--line);border-radius:12px;display:grid;place-items:center;background:#fff;overflow:hidden;color:#888;font-size:12px}
+.logo-box .lg img{max-width:100%;max-height:100%;object-fit:contain}
+.fmt{display:inline-flex;border:1px solid var(--line);border-radius:22px;overflow:hidden;margin-bottom:16px}
+.fmt span{padding:8px 18px;font-size:14px;font-weight:600}
+.fmt span.on{background:var(--accent);color:#fff}
+
+.toast{position:fixed;left:50%;bottom:calc(100px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:30;
+  background:var(--text);color:var(--bg);padding:11px 16px;border-radius:12px;font-size:14px;max-width:90vw;text-align:center}
+.hidden{display:none!important}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<input type="file" id="in-cam" accept="image/*" capture="environment" class="sr" tabindex="-1">
+<input type="file" id="in-gal" accept="image/*" multiple class="sr" tabindex="-1">
+<input type="file" id="in-sheet" accept=".xlsx,.xls,.csv,.ods,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv" class="sr" tabindex="-1">
+<input type="file" id="in-backup" accept=".json,application/json" class="sr" tabindex="-1">
+<input type="file" id="in-logo" accept="image/*" class="sr" tabindex="-1">
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script>
+(() => {
+'use strict';
+const $ = (s, el = document) => el.querySelector(s);
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const COMPANY_DEFAULT = {name:'', contact:'', phone:'', email:'', address:'', logo:null};
+
+const I = {
+  back:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>',
+  more:'<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>',
+  info:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.5"/></svg>',
+  cam:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>',
+  plus:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>',
+  img:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="M21 16l-5-5-9 9"/></svg>',
+  trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></svg>',
+  left:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>',
+  right:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg>',
+  pdf:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4M9 13h6M9 17h6"/></svg>',
+  sheet:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M4 9h16M4 15h16M10 3v18"/></svg>',
+  edit:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M4 20h4L19 9l-4-4L4 16z"/></svg>',
+  text:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h16M4 11h16M4 16h10"/></svg>',
+  save:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 4v11M7 10l5 5 5-5M4 20h16"/></svg>',
+  upload:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 20V9M7 14l5-5 5 5M4 4h16"/></svg>',
+  next:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h13M13 6l6 6-6 6"/></svg>',
+  folder:'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 6a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>',
+  folderO:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M3 6a1 1 0 0 1 1-1h5l2 2h9a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z"/></svg>',
+  clip:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="5" y="4" width="14" height="17" rx="1.5"/><path d="M9 4V2.8h6V4"/></svg>',
+  case:'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M9 4h6a1 1 0 0 1 1 1v2h4a1 1 0 0 1 1 1v4H3V8a1 1 0 0 1 1-1h4V5a1 1 0 0 1 1-1zm1 3h4V6h-4zM3 13.5h7V15h4v-1.5h7V19a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z"/></svg>',
+  sub:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4v9h12M14 9l4 4-4 4"/></svg>',
+  arrow:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12h15M13 6l6 6-6 6"/></svg>',
+  home:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M4 10.5L12 4l8 6.5V20a1 1 0 0 1-1 1h-5v-6h-4v6H5a1 1 0 0 1-1-1z"/></svg>',
+  flag:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"><path d="M5 21V4M5 4h11l-2 4 2 4H5"/></svg>',
+  grid:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="4" y="4" width="7" height="7" rx="2"/><rect x="13" y="4" width="7" height="7" rx="2"/><rect x="4" y="13" width="7" height="7" rx="2"/><rect x="13" y="13" width="7" height="7" rx="2"/></svg>',
+  move:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M3 6a1 1 0 0 1 1-1h5l2 2h9a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z"/><path d="M9 13h6M13 10.5l2.5 2.5-2.5 2.5" stroke-linecap="round"/></svg>'
+};
+
+/* ---------- IndexedDB ---------- */
+let dbp;
+function idb(){
+  if (dbp) return dbp;
+  dbp = new Promise((res, rej) => {
+    let r;
+    try { r = indexedDB.open('relatorio-campo', 2); } catch (e) { rej(e); return; }
+    r.onupgradeneeded = ev => {
+      const d = r.result, old = ev.oldVersion;
+      if (old < 1) {
+        d.createObjectStore('projects', {keyPath:'id'});
+        const it = d.createObjectStore('items', {keyPath:'id'}); it.createIndex('projectId', 'projectId');
+        const ph = d.createObjectStore('photos', {keyPath:'id'}); ph.createIndex('itemId', 'itemId'); ph.createIndex('projectId', 'projectId');
+      }
+      if (old < 2) {
+        d.createObjectStore('folders', {keyPath:'id'});
+        d.createObjectStore('settings', {keyPath:'key'});
+      }
+    };
+    r.onsuccess = () => res(r.result);
+    r.onerror = () => rej(r.error);
+  });
+  return dbp;
+}
+const P = r => new Promise((res, rej) => { r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); });
+async function os(name, mode = 'readonly'){ const d = await idb(); return d.transaction(name, mode).objectStore(name); }
+const getAll = async n => P((await os(n)).getAll());
+const byIdx = async (n, idx, v) => P((await os(n)).index(idx).getAll(v));
+const get = async (n, k) => P((await os(n)).get(k));
+const put = async (n, v) => P((await os(n, 'readwrite')).put(v));
+async function putMany(n, arr){
+  const d = await idb();
+  return new Promise((res, rej) => {
+    const t = d.transaction(n, 'readwrite'); const s = t.objectStore(n);
+    arr.forEach(v => s.put(v));
+    t.oncomplete = () => res(); t.onerror = () => rej(t.error);
+  });
+}
+async function delMany(map){
+  const d = await idb();
+  return new Promise((res, rej) => {
+    const t = d.transaction(Object.keys(map), 'readwrite');
+    for (const [n, ids] of Object.entries(map)) { const s = t.objectStore(n); ids.forEach(id => s.delete(id)); }
+    t.oncomplete = () => res(); t.onerror = () => rej(t.error);
+  });
+}
+const getSetting = async k => (await get('settings', k))?.value;
+const setSetting = (k, v) => put('settings', {key:k, value:v});
+async function getCompany(){ return {...COMPANY_DEFAULT, ...((await getSetting('company')) || {})}; }
+async function nextDocNumber(){ const n = ((await getSetting('docSeq')) || 0) + 1; await setSetting('docSeq', n); return n; }
+
+/* ---------- helpers ---------- */
+const byOrder = (a, b) => (a.order - b.order) || (a.createdAt - b.createdAt);
+const byName = (a, b) => a.name.localeCompare(b.name, 'pt-BR', {numeric:true});
+const pid0 = x => x.parentId || null;
+function fmtDay(ts){ const d = new Date(ts); return `${d.toLocaleDateString('pt-BR', {weekday:'short'})}, ${d.toLocaleDateString('pt-BR')}`; }
+function fmtDate(ts){ return `${fmtDay(ts)} ${new Date(ts).toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'})}`; }
+const urls = new Map();
+function blobUrl(key, blob){ if (!blob) return ''; if (!urls.has(key)) urls.set(key, URL.createObjectURL(blob)); return urls.get(key); }
+const phSrc = (ph, t) => (t ? ph.tsrc : ph.src) || blobUrl((t ? 't' : 'f') + ph.id, t ? ph.thumb : ph.blob);
+function dropUrl(key){ if (urls.has(key)) { URL.revokeObjectURL(urls.get(key)); urls.delete(key); } }
+let toastT;
+function toast(msg, ms = 2600){
+  let t = $('.toast');
+  if (!t) { t = document.createElement('div'); t.className = 'toast'; t.setAttribute('role', 'status'); document.body.appendChild(t); }
+  t.textContent = msg; t.classList.remove('hidden');
+  clearTimeout(toastT); toastT = setTimeout(() => t.classList.add('hidden'), ms);
+}
+const hideToast = () => $('.toast')?.classList.add('hidden');
+function statusOf(it){ return it.status === 'ok' || it.status === 'anomalia' ? it.status : 'none'; }
+const STATUS_LABEL = {ok:'Sem anomalia', anomalia:'Com anomalia', none:'Sem classificação'};
+function pathTo(fid, folders){
+  const m = new Map(folders.map(f => [f.id, f])); const out = []; let c = fid ? m.get(fid) : null, g = 0;
+  while (c && g++ < 60) { out.unshift(c); c = c.parentId ? m.get(c.parentId) : null; }
+  return out;
+}
+async function touchProject(pid){ const p = await get('projects', pid); if (p) { p.updatedAt = Date.now(); await put('projects', p); } }
+
+async function processImage(file){
+  const url = URL.createObjectURL(file);
+  try {
+    const img = await new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = () => rej(new Error('imagem inválida')); i.src = url; });
+    const make = (max, q, type = 'image/jpeg') => {
+      let w = img.naturalWidth, h = img.naturalHeight;
+      const s = Math.min(1, max / Math.max(w, h)); w = Math.round(w * s); h = Math.round(h * s);
+      const c = document.createElement('canvas'); c.width = w; c.height = h;
+      const ctx = c.getContext('2d');
+      if (type === 'image/jpeg') { ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, w, h); }
+      ctx.drawImage(img, 0, 0, w, h);
+      return Promise.resolve({d: c.toDataURL(type, q), w, h});
+    };
+    return {make};
+  } finally { setTimeout(() => URL.revokeObjectURL(url), 5000); }
+}
+async function addPhotos(itemId, files){
+  const it = await get('items', itemId); if (!it) return;
+  for (const f of files) {
+    const {make} = await processImage(f);
+    const full = await make(1800, .82), th = await make(320, .7);
+    const ph = {id: uid(), itemId, projectId: it.projectId, src: full.d, tsrc: th.d, w: full.w, h: full.h, takenAt: Date.now()};
+    await put('photos', ph);
+    it.photoIds = [...(it.photoIds || []), ph.id];
+  }
+  it.updatedAt = Date.now(); await put('items', it); await touchProject(it.projectId);
+}
+async function createProject(name, parentId){
+  const p = {id: uid(), name, parentId: parentId || null, defaultDesc:'', docNumber: await nextDocNumber(), createdAt: Date.now(), updatedAt: Date.now()};
+  await put('projects', p); return p;
+}
+async function createItem(pid, fields = {}){
+  const p = await get('projects', pid);
+  const sib = await byIdx('items', 'projectId', pid);
+  const maxOrder = sib.reduce((m, x) => Math.max(m, x.order || 0), 0);
+  const it = {id: uid(), projectId: pid, order: maxOrder + 1, title: fields.title ?? '', desc: fields.desc ?? (p?.defaultDesc || ''),
+    status: null, photoIds: [], createdAt: Date.now(), updatedAt: Date.now()};
+  await put('items', it); await touchProject(pid); return it;
+}
+
+/* ---------- downloads ---------- */
+async function saveFile(filename, data){
+  // Versão instalada: entrega o arquivo pela folha de compartilhar do iPhone (Arquivos, WhatsApp, e-mail…)
+  const type = /\.pdf$/i.test(filename) ? 'application/pdf' : /\.xlsx$/i.test(filename) ? 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' : /\.json$/i.test(filename) ? 'application/json' : 'application/octet-stream';
+  const blob = data instanceof Blob ? new Blob([data], {type}) : new Blob([data], {type});
+  const file = new File([blob], filename, {type});
+  const url = URL.createObjectURL(blob);
+  const canShare = !!(navigator.canShare && navigator.canShare({files:[file]}));
+  openSheet(`<h2>Arquivo pronto</h2><p class="hint" style="margin:-6px 0 16px">${esc(filename)}</p>
+    ${canShare ? `<button class="btn primary block" data-c="share" style="margin-bottom:10px">${I.upload}Compartilhar ou salvar em Arquivos</button>` : ''}
+    <a class="btn ${canShare ? 'ghost' : 'primary'} block" href="${url}" download="${esc(filename)}" target="_blank" rel="noopener" style="text-decoration:none">${I.save}Abrir / baixar</a>`,
+    s => s.addEventListener('click', async ev => {
+      const b = ev.target.closest('[data-c="share"]'); if (!b) return;
+      try { await navigator.share({files:[file], title: filename}); closeSheet(); }
+      catch (e) { if (e && e.name !== 'AbortError') toast('Não foi possível compartilhar. Use “Abrir / baixar”.'); }
+    }));
+  return true;
+}
+
+/* ---------- sheets ---------- */
+function openSheet(html, onMount){
+  closeSheet();
+  const b = document.createElement('div'); b.className = 'backdrop'; b.id = 'backdrop';
+  b.innerHTML = `<div class="sheet" role="dialog" aria-modal="true"><div class="grab"></div><button class="sheet-close" data-close>Fechar</button>${html}</div>`;
+  b.querySelector('[data-close]').addEventListener('click', closeSheet);
+  b.addEventListener('click', e => { if (e.target === b) closeSheet(); });
+  document.body.appendChild(b);
+  onMount && onMount(b.firstElementChild);
+  return b.firstElementChild;
+}
+function closeSheet(){ $('#backdrop')?.remove(); }
+function menu(title, entries){
+  const html = (title ? `<h2>${esc(title)}</h2>` : '') + entries.map((e, i) =>
+    `<button class="menu-item ${e.danger ? 'danger' : ''}" data-mi="${i}">${I[e.icon] || ''}<span>${esc(e.label)}</span></button>`).join('');
+  openSheet(html, s => s.addEventListener('click', ev => {
+    const b = ev.target.closest('[data-mi]'); if (!b) return; closeSheet(); entries[+b.dataset.mi].run();
+  }));
+}
+function confirmSheet(title, text, okLabel, run){
+  openSheet(`<h2>${esc(title)}</h2><p class="hint" style="margin-bottom:18px">${esc(text)}</p>
+    <div class="row"><button class="btn ghost" data-c="no">Cancelar</button><button class="btn danger" data-c="yes">${esc(okLabel)}</button></div>`,
+    s => s.addEventListener('click', ev => { const b = ev.target.closest('[data-c]'); if (!b) return; closeSheet(); if (b.dataset.c === 'yes') run(); }));
+}
+function promptSheet(title, label, value, okLabel, run, multiline = false){
+  const field = multiline ? `<textarea class="inp" id="ps-v">${esc(value)}</textarea>` : `<input class="inp" id="ps-v" value="${esc(value)}" maxlength="100">`;
+  openSheet(`<h2>${esc(title)}</h2><div class="field"><label class="lb" for="ps-v">${esc(label)}</label>${field}</div>
+    <div class="row"><button class="btn ghost" data-c="no">Cancelar</button><button class="btn primary" data-c="yes">${esc(okLabel)}</button></div>`,
+    s => {
+      const inp = $('#ps-v', s); if (!multiline) setTimeout(() => inp.focus(), 50);
+      s.addEventListener('click', ev => {
+        const b = ev.target.closest('[data-c]'); if (!b) return;
+        const v = inp.value.trim();
+        if (b.dataset.c === 'yes') { if (!v && !multiline) { inp.focus(); return; } closeSheet(); run(v); } else closeSheet();
+      });
+    });
+}
+
+/* ---------- routing + memória ---------- */
+const app = $('#app');
+let view = {name:'home'};
+const TAB_VIEWS = ['home', 'folder', 'pend', 'more'];
+function go(v){
+  view = v;
+  setSetting('lastView', {name: v.name, id: v.id || null}).catch(() => {});
+  render().then(() => window.scrollTo(0, 0));
+}
+async function render(){
+  document.body.dataset.view = view.name;
+  try {
+    if (view.name === 'home') await renderHome();
+    else if (view.name === 'folder') await renderFolder();
+    else if (view.name === 'pend') await renderPend();
+    else if (view.name === 'more') await renderMore();
+    else if (view.name === 'project') await renderProject();
+    else if (view.name === 'item') await renderItem();
+  } catch (e) {
+    console.error(e);
+    app.innerHTML = `<main><div class="empty-state"><p>O armazenamento do aparelho não respondeu. Feche e abra o app de novo.</p><p class="hint">${esc(e.message)}</p></div></main>`;
+  }
+}
+function tabsHtml(active){
+  const t = [['home', 'Início', I.home], ['folder', 'Pastas', I.folderO], ['pend', 'Pendências', I.flag], ['more', 'Mais', I.grid]];
+  return `<nav class="tabs" aria-label="Navegação"><div class="tabs-inner">${t.map(([k, l, ic]) =>
+    `<button class="tab" data-act="tab" data-tab="${k}" ${k === active ? 'aria-current="page"' : ''}>${ic}<span>${l}</span></button>`).join('')}</div></nav>`;
+}
+const chev = `<svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>`;
+
+function crumbsHtml(company, path, project){
+  const levels = [{kind:'root', id:'', name: company.name || 'Minha empresa'}, ...path.map(f => ({kind:'folder', id:f.id, name:f.name}))];
+  if (project) levels.push({kind:'report', id: project.id, name: project.name});
+  return `<nav class="crumbs" aria-label="Caminho">${levels.map((l, i) => {
+    const cur = i === levels.length - 1;
+    const icon = l.kind === 'root' ? I.case : cur ? I.arrow : I.sub;
+    const lead = l.kind === 'root' ? '' : (!cur ? I.folderO : '');
+    const pad = l.kind === 'root' ? 12 : 12 + Math.min(i - 1, 5) * 12;
+    const act = l.kind === 'report' ? `data-act="open-project" data-id="${l.id}"` : `data-act="folder" data-id="${l.id}"`;
+    const infoAct = l.kind === 'root' ? 'company' : l.kind === 'folder' ? 'folder-info' : 'project-menu';
+    return `<div class="crumb ${l.kind === 'root' ? 'root' : ''} ${cur ? 'current' : ''}">
+      <button class="go" style="padding-left:${pad}px" ${act} ${cur ? 'aria-current="page"' : ''}>${icon}${lead}<span>${esc(l.name)}</span></button>
+      ${cur ? `<button class="icon-btn sm" data-act="${infoAct}" data-id="${l.id}" aria-label="Opções de ${esc(l.name)}">${I.info}</button>` : ''}</div>`;
+  }).join('')}</nav>`;
+}
+
+async function loadAll(){
+  const [folders, projects, items, company] = await Promise.all([getAll('folders'), getAll('projects'), getAll('items'), getCompany()]);
+  const st = {};
+  for (const it of items) { const s = st[it.projectId] ||= {t:0, p:0, b:0}; s.t++; if ((it.photoIds || []).length) s.p++; if (it.status === 'anomalia') s.b++; }
+  return {folders, projects, items, company, st};
+}
+function reportRow(p, s, folders, opts = {}){
+  s = s || {t:0, p:0, b:0};
+  const pct = s.t ? Math.round(s.p / s.t * 100) : 0;
+  const where = opts.showPath ? pathTo(pid0(p), folders).map(f => f.name).join(' › ') : '';
+  return `<div class="lrow"><button class="main" data-act="open-project" data-id="${p.id}"><span class="ico blue">${I.clip}</span>
+    <div class="txt"><div class="nm">${esc(p.name)}</div>
+    <div class="mt">${where ? esc(where) + '  ·  ' : ''}${s.p} de ${s.t} com foto${s.b ? `, <span class="bad">${s.b} com anomalia</span>` : ''}</div>
+    ${!opts.showPath && s.t ? `<div class="minibar"><i style="width:${pct}%"></i></div>` : ''}</div>${opts.menu ? '' : chev}</button>
+    ${opts.menu ? `<button class="icon-btn" data-act="project-menu" data-id="${p.id}" aria-label="Opções">${I.more}</button>` : ''}</div>`;
+}
+
+/* ---------- início ---------- */
+async function renderHome(){
+  curFolderId = null;
+  const {folders, projects, items, company} = await loadAll();
+  const first = (company.contact || '').trim().split(/\s+/)[0] || 'bem-vindo';
+  const ini = (company.contact || company.name || 'R').trim().split(/\s+/).slice(0, 2).map(w => w[0]).join('').toUpperCase();
+  const nPhotos = items.reduce((m, x) => m + (x.photoIds || []).length, 0);
+  const noPhoto = items.filter(i => !(i.photoIds || []).length).length;
+  const bad = items.filter(i => i.status === 'anomalia').length;
+  const ok = items.filter(i => i.status === 'ok').length;
+  const unclass = items.filter(i => (i.photoIds || []).length && statusOf(i) === 'none').length;
+  const st = {}; for (const it of items) { const s = st[it.projectId] ||= {t:0, p:0, b:0}; s.t++; if ((it.photoIds || []).length) s.p++; if (it.status === 'anomalia') s.b++; }
+  const recent = [...projects].sort((a, b) => b.updatedAt - a.updatedAt).slice(0, 5);
+  const today = new Date().toLocaleDateString('pt-BR', {weekday:'long', day:'numeric', month:'long'});
+  const todayCap = today.charAt(0).toUpperCase() + today.slice(1);
+  app.innerHTML = `
+  <header class="hero"><div class="bar"><div class="avatar" aria-hidden="true">${esc(ini)}</div>
+    <div class="hi"><small>${esc(todayCap)}</small><b>Olá, ${esc(first)}</b></div>
+    <button class="icon-btn" data-act="company" aria-label="Dados da empresa">${I.case}</button></div>
+    <div class="co">${I.case}<span>${esc(company.name || '')}</span></div></header>
+  <div class="quick">
+    <button class="qa" data-act="new-report"><i>${I.plus}</i>Novo relatório</button>
+    <button class="qa" data-act="import"><i>${I.sheet}</i>Importar planilha</button>
+  </div>
+  <main style="padding-top:0">
+    <div class="sec"><h2>Pendências</h2><button class="link" data-act="tab" data-tab="pend">Ver todas ${I.right}</button></div>
+    <div class="stats">
+      <button class="stat" data-act="tab" data-tab="pend"><b>${noPhoto}</b><span>Sem foto</span></button>
+      <button class="stat" data-act="tab" data-tab="folder"><b>${projects.length}</b><span>Relatórios</span></button>
+      <div class="stat"><b>${nPhotos}</b><span>Fotos</span></div>
+    </div>
+    <div class="prio">
+      <button class="pr bad" data-act="pend-filter" data-f="bad">${I.flag}<span>Com anomalia</span><b>${bad}</b></button>
+      <div class="pr ok">${I.flag}<span>Sem anomalia</span><b>${ok}</b></div>
+      <button class="pr warn" data-act="pend-filter" data-f="unclass">${I.flag}<span>Sem classificação</span><b>${unclass}</b></button>
+      <button class="pr blue" data-act="pend-filter" data-f="nophoto">${I.cam}<span>A fotografar</span><b>${noPhoto}</b></button>
+    </div>
+    <div class="sec"><h2>Relatórios recentes</h2><button class="link" data-act="tab" data-tab="folder">Ver todos ${I.right}</button></div>
+    ${recent.length ? `<div class="group">${recent.map(p => reportRow(p, st[p.id], folders, {showPath:true})).join('')}</div>`
+      : `<div class="group"><div class="empty-state"><span class="ico blue">${I.clip}</span><b>Nenhum relatório ainda</b><p>Crie um relatório ou importe uma planilha para gerar os itens automaticamente.</p></div></div>`}
+  </main>
+  ${tabsHtml('home')}`;
+}
+
+/* ---------- pastas ---------- */
+async function renderFolder(){
+  const fid = view.id || null;
+  curFolderId = fid;
+  const {folders, projects, company, st} = await loadAll();
+  if (fid && !folders.some(f => f.id === fid)) return go({name:'folder', id:null});
+  const path = pathTo(fid, folders);
+  const subs = folders.filter(f => pid0(f) === fid).sort(byName);
+  const reps = projects.filter(p => pid0(p) === fid).sort(byName);
+  const countIn = f => { const a = folders.filter(x => pid0(x) === f.id).length, b = projects.filter(x => pid0(x) === f.id).length;
+    return [a ? `${a} ${a === 1 ? 'pasta' : 'pastas'}` : '', b ? `${b} ${b === 1 ? 'relatório' : 'relatórios'}` : ''].filter(Boolean).join(', ') || 'Vazia'; };
+  const rows = subs.map(f => `<div class="lrow"><button class="main" data-act="folder" data-id="${f.id}"><span class="ico">${I.folder}</span>
+      <div class="txt"><div class="nm">${esc(f.name)}</div><div class="mt">${countIn(f)}</div></div>${chev}</button>
+      <button class="icon-btn" data-act="folder-info" data-id="${f.id}" aria-label="Opções">${I.more}</button></div>`).join('')
+    + reps.map(p => reportRow(p, st[p.id], folders, {menu:true})).join('');
+  const title = fid ? path[path.length - 1].name : 'Pastas';
+  app.innerHTML = `
+  <main>
+    <div class="ltitle">${fid ? `<button class="icon-btn" data-act="folder" data-id="${pid0(path[path.length - 1]) || ''}" aria-label="Voltar" style="margin-left:-10px">${I.back}</button>` : ''}
+      <div><h1>${esc(title)}</h1><p>${fid ? 'Pastas e relatórios' : 'Organize por cliente, unidade e tipo de ensaio'}</p></div></div>
+    ${crumbsHtml(company, path, null)}
+    ${rows ? `<div class="group">${rows}</div>` : `<div class="group"><div class="empty-state"><span class="ico blue">${I.folderO}</span><b>Pasta vazia</b>
+      <p>Crie pastas como “Rede D’Or → Ribeirão Preto → Painel de Baixa” e coloque os relatórios dentro.</p>
+      <div class="row" style="max-width:420px;margin:0 auto"><button class="btn primary" data-act="new-folder">${I.folder}Nova pasta</button>
+      <button class="btn ghost" data-act="new-report">${I.clip}Novo relatório</button></div></div></div>`}
+  </main>
+  <button class="fab-float" data-act="add-menu" aria-label="Adicionar">${I.plus}</button>
+  ${tabsHtml('folder')}`;
+}
+
+/* ---------- pendências ---------- */
+async function renderPend(){
+  curFolderId = null;
+  const {folders, projects, items} = await loadAll();
+  const f = view.filter || 'nophoto';
+  const test = {nophoto: i => !(i.photoIds || []).length, bad: i => i.status === 'anomalia', unclass: i => (i.photoIds || []).length && statusOf(i) === 'none'};
+  const counts = Object.fromEntries(Object.entries(test).map(([k, fn]) => [k, items.filter(fn).length]));
+  const sel = items.filter(test[f]);
+  const byP = new Map(); for (const it of sel) { if (!byP.has(it.projectId)) byP.set(it.projectId, []); byP.get(it.projectId).push(it); }
+  const pm = new Map(projects.map(p => [p.id, p]));
+  const groups = [...byP.entries()].map(([pid, its]) => ({p: pm.get(pid), its: its.sort(byOrder)})).filter(g => g.p).sort((a, b) => b.p.updatedAt - a.p.updatedAt);
+  const icon = f === 'bad' ? `<span class="ico bad">${I.flag}</span>` : f === 'unclass' ? `<span class="ico">${I.flag}</span>` : `<span class="ico blue">${I.cam}</span>`;
+  app.innerHTML = `
+  <main>
+    <div class="ltitle"><div><h1>Pendências</h1><p>O que ainda falta resolver nos relatórios</p></div></div>
+    <div class="chips" role="group" aria-label="Filtro" style="margin-top:0">
+      <button class="chip" data-act="pend-filter" data-f="nophoto" aria-pressed="${f === 'nophoto'}">Sem foto (${counts.nophoto})</button>
+      <button class="chip" data-act="pend-filter" data-f="bad" aria-pressed="${f === 'bad'}">Com anomalia (${counts.bad})</button>
+      <button class="chip" data-act="pend-filter" data-f="unclass" aria-pressed="${f === 'unclass'}">Sem classificação (${counts.unclass})</button></div>
+    ${groups.length ? groups.map(g => `<div class="sec" style="margin-top:16px"><h2 style="font-size:14.5px">${esc(g.p.name)}</h2>
+        <button class="link" data-act="open-project" data-id="${g.p.id}">Abrir ${I.right}</button></div>
+      <div class="group">${g.its.map(it => `<div class="lrow"><button class="main" data-act="open-item" data-id="${it.id}">${icon}
+        <div class="txt"><div class="nm">${esc(it.title || 'Sem título')}</div><div class="mt">${esc(pathTo(pid0(g.p), folders).map(x => x.name).join(' › ') || 'Início')}</div></div>${chev}</button></div>`).join('')}</div>`).join('')
+      : `<div class="group"><div class="empty-state"><span class="ico blue">${I.flag}</span><b>Tudo em dia</b><p>Nenhum item nesta lista.</p></div></div>`}
+  </main>
+  ${tabsHtml('pend')}`;
+}
+
+/* ---------- mais ---------- */
+async function renderMore(){
+  curFolderId = null;
+  const company = await getCompany();
+  const row = (act, ic, nm, mt, cls = '') => `<div class="lrow"><button class="main" data-act="${act}"><span class="ico ${cls}">${ic}</span>
+    <div class="txt"><div class="nm">${nm}</div><div class="mt">${mt}</div></div>${chev}</button></div>`;
+  app.innerHTML = `
+  <main>
+    <div class="ltitle"><div><h1>Mais</h1><p>Configurações e cópias de segurança</p></div></div>
+    <div class="group">${row('company', I.case, 'Dados da empresa', esc(company.name || 'Logo, contato e endereço do relatório'), 'blue')}
+      ${row('template', I.sheet, 'Baixar planilha modelo', 'Exemplo de colunas para importar')}</div>
+    <div class="sec"><h2>Backup</h2></div>
+    <div class="group">${row('backup', I.save, 'Fazer backup de tudo', 'Salva pastas, relatórios e fotos num arquivo')}
+      ${row('restore', I.upload, 'Restaurar backup', 'Traz os dados de outro aparelho')}</div>
+    <p class="hint" style="padding:0 4px">Os dados ficam guardados só neste aparelho. Faça backup com frequência.</p>
+  </main>
+  ${tabsHtml('more')}`;
+}
+
+/* ---------- relatório ---------- */
+async function renderProject(){
+  const p = await get('projects', view.id);
+  if (!p) return go({name:'folder', id:null});
+  curFolderId = pid0(p);
+  const folders = await getAll('folders');
+  const path = pathTo(pid0(p), folders);
+  const items = (await byIdx('items', 'projectId', p.id)).sort(byOrder);
+  const photos = await byIdx('photos', 'projectId', p.id);
+  const pmap = new Map(photos.map(x => [x.id, x]));
+  const f = view.filter || 'all';
+  const noPhoto = items.filter(i => !(i.photoIds || []).length);
+  const bad = items.filter(i => i.status === 'anomalia');
+  const shown = f === 'nophoto' ? noPhoto : f === 'bad' ? bad : items;
+  const cards = shown.map(it => {
+    const ph = pmap.get((it.photoIds || [])[0]); const s = statusOf(it);
+    const thumb = ph ? `<img class="thumb" src="${phSrc(ph, true)}" alt="" onerror="this.outerHTML='<div class=&quot;thumb empty&quot;>Refazer</div>'">` : `<div class="thumb empty">${I.cam}</div>`;
+    const n = (it.photoIds || []).length;
+    return `<button class="card item" data-act="open-item" data-id="${it.id}">${thumb}
+      <div class="body"><div class="date">${ph ? esc(fmtDate(ph.takenAt)) : 'Sem foto'}${n > 1 ? `  (${n} fotos)` : ''}</div>
+      <div class="title">${esc(it.title || 'Sem título')}</div>
+      <div class="desc"><span class="dot ${s}"></span>${esc(it.desc || 'Sem descrição')}</div></div></button>`;
+  }).join('');
+  app.innerHTML = `
+  <header class="top"><button class="icon-btn" data-act="folder" data-id="${pid0(p) || ''}" aria-label="Voltar">${I.back}</button>
+    <h1>${esc(p.name)}</h1>
+    <button class="icon-btn" data-act="project-menu" data-id="${p.id}" aria-label="Mais opções">${I.more}</button></header>
+  <main>
+    <div class="path"><button data-act="tab" data-tab="folder">${esc((await getCompany()).name.split(' ')[0] || 'Início')}</button>${path.map(x => `${I.right}<button data-act="folder" data-id="${x.id}">${esc(x.name)}</button>`).join('')}</div>
+    <div class="stats">
+      <button class="stat" data-act="filter" data-f="all"><b>${items.length}</b><span>Itens</span></button>
+      <button class="stat" data-act="filter" data-f="nophoto"><b>${noPhoto.length}</b><span>Sem foto</span></button>
+      <button class="stat" data-act="filter" data-f="bad"><b style="color:${bad.length ? 'var(--bad)' : 'inherit'}">${bad.length}</b><span>Com anomalia</span></button>
+    </div>
+    ${items.length ? `<div class="chips" role="group" aria-label="Filtro">
+      <button class="chip" data-act="filter" data-f="all" aria-pressed="${f === 'all'}">Todos</button>
+      <button class="chip" data-act="filter" data-f="nophoto" aria-pressed="${f === 'nophoto'}">Sem foto</button>
+      <button class="chip" data-act="filter" data-f="bad" aria-pressed="${f === 'bad'}">Com anomalia</button></div>` : '<div style="height:14px"></div>'}
+    ${cards || (items.length ? `<div class="group"><div class="empty-state"><p>Nenhum item neste filtro.</p></div></div>` :
+      `<div class="group"><div class="empty-state"><span class="ico blue">${I.cam}</span><b>Nenhum item ainda</b><p>Tire uma foto ou importe uma planilha para criar os títulos.</p>
+      <div class="row" style="max-width:420px;margin:0 auto"><button class="btn primary" data-act="import">${I.sheet}Importar planilha</button>
+      <button class="btn ghost" data-act="add-item">${I.plus}Item sem foto</button></div></div></div>`)}
+  </main>
+  <nav class="bottom"><div class="bottom-inner">
+    <div class="side"><button class="text-btn" data-act="next-pending" ${noPhoto.length ? '' : 'disabled'}>Próximo sem foto</button></div>
+    <button class="fab" data-act="cam-new" aria-label="Tirar foto e criar item">${I.cam}</button>
+    <div class="side right"><button class="text-btn" data-act="share" ${items.length ? '' : 'disabled'}>${I.pdf}Compartilhar</button></div>
+  </div></nav>`;
+}
+
+/* ---------- item ---------- */
+async function renderItem(){
+  const it = await get('items', view.id);
+  if (!it) return go({name:'folder', id:null});
+  const p = await get('projects', it.projectId);
+  curFolderId = p ? pid0(p) : null;
+  const sib = (await byIdx('items', 'projectId', it.projectId)).sort(byOrder);
+  const idx = sib.findIndex(x => x.id === it.id);
+  const photos = (await Promise.all((it.photoIds || []).map(id => get('photos', id)))).filter(Boolean);
+  const s = statusOf(it);
+  const photoHtml = photos.length
+    ? `<div class="photos ${photos.length > 1 ? 'multi' : ''}">${photos.map((ph, i) => `<figure class="photo">
+        <img src="${phSrc(ph)}" alt="Foto ${i + 1}" onerror="this.outerHTML='<div class=&quot;add-photo&quot; style=&quot;margin:0&quot;>Esta foto não pôde ser lida. Exclua no ícone da lixeira e tire de novo.</div>'">
+        <button class="del" data-act="del-photo" data-id="${ph.id}" aria-label="Excluir foto">${I.trash}</button>
+        <span class="n">${photos.length > 1 ? `${i + 1}/${photos.length}  ` : ''}${esc(fmtDate(ph.takenAt))}</span></figure>`).join('')}</div>`
+    : `<div class="add-photo">${I.cam}Nenhuma foto neste item</div>`;
+  app.innerHTML = `
+  <header class="top"><button class="icon-btn" data-act="open-project" data-id="${it.projectId}" aria-label="Voltar">${I.back}</button>
+    <h1>(${idx + 1}/${sib.length}) ${esc(p?.name || '')}<span class="sub">${esc(it.title || 'Sem título')}</span></h1>
+    <button class="icon-btn" data-act="item-menu" aria-label="Mais opções">${I.more}</button></header>
+  <main>
+    ${photoHtml}
+    <div class="photo-actions"><button class="btn ghost" data-act="cam-add">${I.cam}Tirar foto</button>
+      <button class="btn ghost" data-act="gal-add">${I.img}Da galeria</button></div>
+    <div class="panel">
+      <div class="field"><label class="lb" for="f-title">Título</label>
+        <input class="inp" id="f-title" maxlength="100" value="${esc(it.title)}" placeholder="Adicionar um título">
+        <div class="counter" id="f-count">${(it.title || '').length}/100</div></div>
+      <div class="field"><label class="lb" for="f-desc">Descrição</label>
+        <textarea class="inp" id="f-desc" maxlength="1000" placeholder="Adicionar uma descrição">${esc(it.desc)}</textarea>
+        <div class="counter" id="d-count">${(it.desc || '').length}/1000</div></div>
+      <div class="field"><span class="lb">Resultado</span>
+        <div class="seg"><button class="ok" data-act="status" data-v="ok" aria-pressed="${s === 'ok'}">Sem anomalia</button>
+        <button class="anomalia" data-act="status" data-v="anomalia" aria-pressed="${s === 'anomalia'}">Com anomalia</button></div></div>
+    </div>
+  </main>
+  <nav class="bottom"><div class="bottom-inner">
+    <div class="side"><button class="icon-btn" data-act="goto" data-id="${sib[idx - 1]?.id || ''}" ${idx > 0 ? '' : 'disabled style="opacity:.3"'} aria-label="Item anterior">${I.left}</button>
+      <button class="icon-btn" data-act="add-item-here" aria-label="Novo item">${I.plus}</button></div>
+    <button class="fab" data-act="cam-add" aria-label="Tirar foto">${I.cam}</button>
+    <div class="side right"><button class="icon-btn" data-act="open-project" data-id="${it.projectId}" aria-label="Lista de itens">${I.text}</button>
+      <button class="icon-btn" data-act="goto" data-id="${sib[idx + 1]?.id || ''}" ${idx < sib.length - 1 ? '' : 'disabled style="opacity:.3"'} aria-label="Próximo item">${I.right}</button></div>
+  </div></nav>`;
+}
+let saveT;
+function queueSave(){ clearTimeout(saveT); saveT = setTimeout(saveFields, 400); }
+async function saveFields(){
+  clearTimeout(saveT);
+  if (view.name !== 'item') return;
+  const t = $('#f-title'), d = $('#f-desc'); if (!t || !d) return;
+  const it = await get('items', view.id); if (!it) return;
+  if (it.title === t.value && it.desc === d.value) return;
+  it.title = t.value; it.desc = d.value; it.updatedAt = Date.now();
+  await put('items', it);
+  const sub = $('.top .sub'); if (sub) sub.textContent = it.title || 'Sem título';
+}
+
+/* ---------- empresa ---------- */
+async function companySheet(){
+  const c = await getCompany();
+  let logo = c.logo || null;
+  const s = openSheet(`<h2>Dados da empresa</h2>
+    <p class="hint" style="margin:-6px 0 14px">Ficam salvos no aparelho e aparecem no cabeçalho e no rodapé de todos os relatórios.</p>
+    <div class="field"><span class="lb">Logo</span><div class="logo-box"><div class="lg" id="c-lg"></div>
+      <div class="row" style="flex-direction:column;gap:6px"><button class="text-btn" data-c="logo">${I.img}Escolher imagem</button>
+      <button class="text-btn" data-c="nologo">${I.trash}Remover</button></div></div></div>
+    <div class="field"><label class="lb" for="c-name">Companhia</label><input class="inp" id="c-name" value="${esc(c.name)}"></div>
+    <div class="two"><div class="field"><label class="lb" for="c-contact">Contato</label><input class="inp" id="c-contact" value="${esc(c.contact)}"></div>
+      <div class="field"><label class="lb" for="c-phone">Fone</label><input class="inp" id="c-phone" type="tel" value="${esc(c.phone)}"></div></div>
+    <div class="field"><label class="lb" for="c-email">E-mail</label><input class="inp" id="c-email" type="email" value="${esc(c.email)}"></div>
+    <div class="field"><label class="lb" for="c-addr">Endereço (rodapé)</label><input class="inp" id="c-addr" value="${esc(c.address)}"></div>
+    <div class="row"><button class="btn ghost" data-c="no">Cancelar</button><button class="btn primary" data-c="yes">Salvar</button></div>`);
+  const showLogo = () => { $('#c-lg', s).innerHTML = logo ? `<img src="${logo.d || URL.createObjectURL(logo.blob)}" alt="Logo">` : 'Sem logo'; };
+  showLogo();
+  $('#in-logo').onchange = async e => {
+    const f = e.target.files[0]; if (!f) return;
+    const {make} = await processImage(f); const r = await make(600, 1, 'image/png');
+    logo = {d: r.d, w: r.w, h: r.h}; showLogo();
+  };
+  s.addEventListener('click', async ev => {
+    const b = ev.target.closest('[data-c]'); if (!b) return;
+    if (b.dataset.c === 'logo') { $('#in-logo').value = ''; $('#in-logo').click(); return; }
+    if (b.dataset.c === 'nologo') { logo = null; showLogo(); return; }
+    if (b.dataset.c === 'yes') {
+      await setSetting('company', {name: $('#c-name', s).value.trim(), contact: $('#c-contact', s).value.trim(), phone: $('#c-phone', s).value.trim(),
+        email: $('#c-email', s).value.trim(), address: $('#c-addr', s).value.trim(), logo});
+      toast('Dados da empresa salvos.'); render();
+    }
+    closeSheet();
+  });
+}
+
+/* ---------- mover ---------- */
+async function moveSheet(kind, id){
+  const folders = await getAll('folders');
+  const banned = new Set();
+  if (kind === 'folder') { banned.add(id); let added = true; while (added) { added = false; for (const f of folders) if (!banned.has(f.id) && banned.has(f.parentId)) { banned.add(f.id); added = true; } } }
+  const tree = []; const walk = (pid, depth) => folders.filter(f => pid0(f) === pid).sort(byName).forEach(f => { if (banned.has(f.id)) return; tree.push({f, depth}); walk(f.id, depth + 1); });
+  walk(null, 0);
+  const company = await getCompany();
+  openSheet(`<h2>Mover para</h2><button class="menu-item" data-to="">${I.case}<span>${esc(company.name || 'Início')}</span></button>` +
+    tree.map(t => `<button class="menu-item" data-to="${t.f.id}" style="padding-left:${18 + t.depth * 16}px">${I.folderO}<span>${esc(t.f.name)}</span></button>`).join(''),
+    s => s.addEventListener('click', async ev => {
+      const b = ev.target.closest('[data-to]'); if (!b) return;
+      const to = b.dataset.to || null;
+      const rec = await get(kind === 'folder' ? 'folders' : 'projects', id);
+      rec.parentId = to; await put(kind === 'folder' ? 'folders' : 'projects', rec);
+      closeSheet(); toast('Movido.'); render();
+    }));
+}
+async function deleteFolderDeep(fid){
+  const folders = await getAll('folders'), projects = await getAll('projects');
+  const fset = new Set([fid]); let added = true;
+  while (added) { added = false; for (const f of folders) if (!fset.has(f.id) && fset.has(f.parentId)) { fset.add(f.id); added = true; } }
+  const pids = projects.filter(p => fset.has(p.parentId)).map(p => p.id);
+  const items = [], photos = [];
+  for (const pid of pids) { (await byIdx('items', 'projectId', pid)).forEach(x => items.push(x.id)); (await byIdx('photos', 'projectId', pid)).forEach(x => photos.push(x.id)); }
+  await delMany({folders:[...fset], projects:pids, items, photos});
+}
+
+/* ---------- planilha ---------- */
+let importTarget = null, importFolder = null;
+function startImport(pid, fid){ importTarget = pid || null; importFolder = fid || null; const i = $('#in-sheet'); i.value = ''; i.click(); }
+async function handleSheetFile(file){
+  if (!window.XLSX) { toast('O leitor de planilhas não carregou. Abra o app com internet uma vez.'); return; }
+  let rows;
+  try {
+    const wb = XLSX.read(await file.arrayBuffer(), {type:'array'});
+    const ws = wb.Sheets[wb.SheetNames[0]];
+    rows = XLSX.utils.sheet_to_json(ws, {header:1, raw:false, defval:''}).map(r => r.map(c => String(c ?? '').trim())).filter(r => r.some(c => c));
+  } catch (e) { toast('Não consegui ler essa planilha. Use .xlsx ou .csv.'); return; }
+  if (!rows.length) { toast('A planilha está vazia.'); return; }
+  const projects = (await getAll('projects')).sort((a, b) => b.updatedAt - a.updatedAt);
+  const baseName = file.name.replace(/\.[^.]+$/, '');
+  const width = Math.max(...rows.map(r => r.length));
+  const state = {hasHeader:true};
+  const headersFor = () => Array.from({length:width}, (_, i) => state.hasHeader ? (rows[0][i] || `Coluna ${i + 1}`) : `Coluna ${i + 1}`);
+  const dataRows = () => state.hasHeader ? rows.slice(1) : rows;
+  const guessTemplate = h => { const t = h.findIndex(x => /t[ií]tulo|title|nome/i.test(x)); if (t >= 0) return `{${h[t]}}`;
+    return h.filter(x => !/descri|obs/i.test(x)).slice(0, 2).map(c => `{${c}}`).join(' — '); };
+  const fill = (tpl, h, row) => tpl.replace(/\{([^}]+)\}/g, (m, n) => { const i = h.indexOf(n.trim()); return i >= 0 ? (row[i] || '') : m; }).replace(/\s+/g, ' ').trim();
+
+  const s = openSheet(`<h2>Importar planilha</h2>
+    <p class="hint" style="margin:-6px 0 14px">${esc(file.name)} com ${rows.length} linhas</p>
+    <label class="check"><input type="checkbox" id="im-head" checked>A primeira linha tem os nomes das colunas</label>
+    <div class="field"><label class="lb" for="im-proj">Relatório</label>
+      <select class="inp" id="im-proj"><option value="__new">Novo relatório nesta pasta</option>
+      ${projects.map(p => `<option value="${p.id}" ${p.id === importTarget ? 'selected' : ''}>${esc(p.name)}</option>`).join('')}</select></div>
+    <div class="field" id="im-newwrap"><label class="lb" for="im-name">Nome do novo relatório</label><input class="inp" id="im-name" value="${esc(baseName)}" maxlength="100"></div>
+    <div class="field"><label class="lb" for="im-tpl">Modelo do título</label><input class="inp" id="im-tpl" autocomplete="off">
+      <p class="hint">Toque numa coluna para inserir. O texto entre chaves é trocado pelo valor de cada linha.</p><div class="colchips" id="im-cols"></div></div>
+    <div class="field"><label class="lb" for="im-desc">Descrição</label><select class="inp" id="im-desc"></select></div>
+    <div class="field"><span class="lb">Prévia dos títulos</span><div class="preview" id="im-prev"></div></div>
+    <button class="btn primary block" id="im-go"></button>`);
+  const q = id => $(id, s);
+  const elHead = q('#im-head'), elProj = q('#im-proj'), elNewWrap = q('#im-newwrap'), elName = q('#im-name'),
+        elTpl = q('#im-tpl'), elCols = q('#im-cols'), elDesc = q('#im-desc'), elPrev = q('#im-prev'), elGo = q('#im-go');
+  function setup(){
+    const h = headersFor(); elTpl.value = guessTemplate(h);
+    elCols.innerHTML = h.map(c => `<button type="button" data-col="${esc(c)}">${esc(c)}</button>`).join('');
+    const dg = h.findIndex(x => /descri/i.test(x));
+    elDesc.innerHTML = `<option value="-1">Usar a descrição padrão do relatório</option>` + h.map((c, i) => `<option value="${i}" ${i === dg ? 'selected' : ''}>Coluna “${esc(c)}”</option>`).join('');
+    upd();
+  }
+  function upd(){
+    const h = headersFor(); const titles = dataRows().map(r => fill(elTpl.value, h, r)).filter(Boolean);
+    elPrev.innerHTML = titles.slice(0, 4).map(t => `<div>${esc(t)}</div>`).join('') + (titles.length > 4 ? `<div class="more">e mais ${titles.length - 4}</div>` : '') + (titles.length ? '' : '<div class="more">Nenhum título gerado</div>');
+    elGo.textContent = `Criar ${titles.length} ${titles.length === 1 ? 'item' : 'itens'}`; elGo.disabled = !titles.length;
+  }
+  elNewWrap.classList.toggle('hidden', elProj.value !== '__new');
+  elProj.addEventListener('change', () => elNewWrap.classList.toggle('hidden', elProj.value !== '__new'));
+  elHead.addEventListener('change', () => { state.hasHeader = elHead.checked; setup(); });
+  elTpl.addEventListener('input', upd);
+  elCols.addEventListener('click', e => {
+    const b = e.target.closest('[data-col]'); if (!b) return;
+    const ins = `{${b.dataset.col}}`, st = elTpl.selectionStart ?? elTpl.value.length, en = elTpl.selectionEnd ?? st;
+    const pre = elTpl.value.slice(0, st); elTpl.value = pre + (pre && !/\s$/.test(pre) ? ' ' : '') + ins + elTpl.value.slice(en); upd();
+  });
+  elGo.addEventListener('click', async () => {
+    elGo.disabled = true;
+    const h = headersFor(), di = +elDesc.value;
+    let pid = elProj.value;
+    if (pid === '__new') pid = (await createProject(elName.value.trim() || baseName, importFolder)).id;
+    const proj = await get('projects', pid);
+    let order = (await byIdx('items', 'projectId', pid)).reduce((m, x) => Math.max(m, x.order || 0), 0);
+    const now = Date.now();
+    const list = dataRows().map(r => ({r, t: fill(elTpl.value, h, r)})).filter(x => x.t).map((x, k) => ({
+      id: uid(), projectId: pid, order: ++order, title: x.t.slice(0, 100), desc: di >= 0 && x.r[di] ? x.r[di].slice(0, 1000) : (proj.defaultDesc || ''),
+      status: null, photoIds: [], createdAt: now + k, updatedAt: now + k}));
+    await putMany('items', list); await touchProject(pid);
+    closeSheet(); toast(`${list.length} itens criados.`); go({name:'project', id: pid});
+  });
+  setup();
+}
+async function downloadTemplate(){
+  if (!window.XLSX) { toast('O gerador de planilhas não carregou. Abra o app com internet uma vez.'); return; }
+  const rows = [['Ponto', 'Ensaio', 'Descrição'],
+    ['LINK-01', 'Identificação', 'Placa de identificação do disjuntor'],
+    ['LINK-01', 'Resistência de contato Fase R', ''], ['LINK-01', 'Resistência de contato Fase S', ''], ['LINK-01', 'Resistência de contato Fase T', ''],
+    ['LINK-01', 'Isolação R-S', ''], ['LINK-01', 'Isolação S-T', ''], ['LINK-01', 'Isolação T-R', '']];
+  const ws = XLSX.utils.aoa_to_sheet(rows); ws['!cols'] = [{wch:12}, {wch:32}, {wch:60}];
+  const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, 'Itens');
+  await saveFile('modelo-relatorio.xlsx', new Blob([XLSX.write(wb, {bookType:'xlsx', type:'array'})]));
+}
+
+/* ---------- PDF (layout do modelo, melhorado) ---------- */
+function blobToDataURL(b){ return new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = () => rej(r.error); r.readAsDataURL(b); }); }
+const WINANSI = '€‚ƒ„…†‡ˆ‰Š‹ŒŽ‘’“”•–—˜™š›œžŸ';
+const PDF_MAP = {'Ω':'Ohm','Ω':'Ohm','≤':'<=','≥':'>=','≈':'~','√':'raiz','Δ':'Delta','φ':'fi','θ':'teta','→':'->','✓':'OK'};
+const pdfSafe = s => String(s ?? '').replace(/[^\x00-\xFF]/g, c => PDF_MAP[c] || (WINANSI.includes(c) ? c : '?'));
+
+async function shareSheet(pid){
+  const p = await get('projects', pid);
+  if (!p.docNumber) { p.docNumber = await nextDocNumber(); await put('projects', p); }
+  const items = await byIdx('items', 'projectId', pid);
+  const nPh = items.reduce((m, x) => m + (x.photoIds || []).length, 0);
+  const nNo = items.filter(x => !(x.photoIds || []).length).length;
+  const base = (p.name || 'relatorio').replace(/[\\/:*?"<>|]+/g, '-').slice(0, 40);
+  const s = openSheet(`<h2>Compartilhar</h2>
+    <div class="fmt" aria-hidden="true"><span class="on">PDF</span></div>
+    <div class="field"><label class="lb" for="sh-name">Nome do arquivo</label><input class="inp" id="sh-name" maxlength="40" value="${esc(base)}">
+      <div class="counter" id="sh-cnt">${base.length}/40</div></div>
+    <div class="two"><div class="field"><label class="lb" for="sh-doc">Nº do documento</label><input class="inp" id="sh-doc" inputmode="numeric" value="${esc(p.docNumber)}"></div>
+      <div class="field"><label class="lb" for="sh-per">Fotos por página</label><select class="inp" id="sh-per"><option value="4" selected>4</option><option value="3">3</option><option value="2">2</option></select></div></div>
+    ${nNo ? `<label class="check"><input type="checkbox" id="sh-empty">Incluir itens sem foto (${nNo})</label>` : ''}
+    <label class="check"><input type="checkbox" id="sh-desc" checked>Mostrar título, descrição e resultado ao lado da foto</label>
+    <p class="hint" style="margin:-4px 0 16px">${nPh} ${nPh === 1 ? 'foto' : 'fotos'} no relatório.</p>
+    <button class="btn primary block" id="sh-go">${I.pdf}Gerar PDF</button>`);
+  $('#sh-name', s).addEventListener('input', e => { $('#sh-cnt', s).textContent = `${e.target.value.length}/40`; });
+  $('#sh-go', s).addEventListener('click', async () => {
+    const doc = $('#sh-doc', s).value.trim();
+    if (doc && doc !== String(p.docNumber)) { p.docNumber = doc; await put('projects', p); }
+    const opts = {filename: ($('#sh-name', s).value.trim() || base) + '.pdf', perPage: +$('#sh-per', s).value,
+      includeEmpty: !!$('#sh-empty', s)?.checked, showText: $('#sh-desc', s).checked};
+    closeSheet(); makePdf(pid, opts);
+  });
+}
+
+async function makePdf(pid, opts){
+  if (!window.jspdf) { toast('O gerador de PDF não carregou. Feche e abra o app de novo.'); return; }
+  toast('Processando imagens…', 120000);
+  try {
+    const {jsPDF} = window.jspdf;
+    const doc = new jsPDF({unit:'mm', format:'a4', compress:true});
+    const W = 210, H = 297, M = 14, CW = W - 2 * M;
+    const p = await get('projects', pid);
+    const company = await getCompany();
+    const folder = p.parentId ? await get('folders', p.parentId) : null;
+    const items = (await byIdx('items', 'projectId', pid)).sort(byOrder);
+    const pm = new Map((await byIdx('photos', 'projectId', pid)).map(x => [x.id, x]));
+    const COL = {ok:[44,138,85], anomalia:[196,64,44], none:[140,146,151]};
+
+    // monta as linhas: uma por foto
+    const entries = [];
+    for (const it of items) {
+      const phs = (it.photoIds || []).map(id => pm.get(id)).filter(Boolean);
+      if (!phs.length) { if (opts.includeEmpty) entries.push({it, ph:null, k:0, of:0}); continue; }
+      phs.forEach((ph, k) => entries.push({it, ph, k, of: phs.length}));
+    }
+    if (!entries.length) { hideToast(); toast('Nenhuma foto para colocar no relatório.'); return; }
+
+    let logo = null;
+    if (company.logo) { try { logo = {data: company.logo.d || await blobToDataURL(company.logo.blob), w: company.logo.w, h: company.logo.h}; } catch (e) { logo = null; } }
+    const fitFont = (text, maxW, size, min) => {
+      let s = size; doc.setFontSize(s);
+      while (doc.getTextWidth(text) > maxW && s > min) { s -= .25; doc.setFontSize(s); }
+      if (doc.getTextWidth(text) > maxW) { while (text.length > 1 && doc.getTextWidth(text + '…') > maxW) text = text.slice(0, -1); text += '…'; }
+      return text;
+    };
+
+    const HEAD_BOTTOM = 40, FOOT_TOP = H - 20;
+    function header(){
+      // logo
+      const lx = M, ly = 10, lw = 30, lh = 16;
+      if (logo) { const sc = Math.min(lw / logo.w, lh / logo.h); doc.addImage(logo.data, 'PNG', lx, ly + (lh - logo.h * sc) / 2, logo.w * sc, logo.h * sc, 'logo', 'FAST'); }
+      else {
+        doc.setFillColor(28, 30, 33); doc.roundedRect(lx, ly + 2, lw, lh - 4, 1.5, 1.5, 'F');
+        doc.setTextColor(245, 179, 1); doc.setFont('helvetica', 'bold'); doc.setFontSize(11);
+        const ini = (company.name || 'R').split(/\s+/).filter(w => w.length > 2).slice(0, 2).map(w => w[0]).join('').toUpperCase() || 'R';
+        doc.text(pdfSafe(ini), lx + lw / 2, ly + lh / 2 + 1.4, {align:'center'});
+      }
+      const rowsL = [['Companhia:', company.name], ['Contato:', company.contact], ['Fone:', company.phone], ['E-mail:', company.email]];
+      const rowsR = [['Título:', p.name], ['Grupo:', folder?.name || '—'], ['Criado:', fmtDay(p.createdAt)], ['Nº de itens:', String(entries.length)]];
+      const draw = (rows, x, lab, valW) => rows.forEach(([l, v], i) => {
+        const y = 14 + i * 5;
+        doc.setFont('helvetica', 'bold'); doc.setFontSize(8.2); doc.setTextColor(25); doc.text(l, x, y);
+        doc.setFont('helvetica', 'normal'); doc.setTextColor(45);
+        const t = fitFont(pdfSafe(v || '—'), valW, 8.2, 6.5); doc.text(t, x + lab, y);
+      });
+      draw(rowsL, M + 35, 19, 58);
+      draw(rowsR, M + 118, 18, CW - 118 - 18);
+      doc.setDrawColor(245, 179, 1); doc.setLineWidth(.8); doc.line(M, 35, W - M, 35);
+      doc.setLineWidth(.2);
+    }
+    function footer(pg, total){
+      doc.setDrawColor(190); doc.setLineWidth(.2); doc.line(M, FOOT_TOP, W - M, FOOT_TOP);
+      doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(70);
+      doc.text(doc.splitTextToSize(pdfSafe(company.address || ''), 120).slice(0, 2), M, FOOT_TOP + 5);
+      doc.text(pdfSafe(`Doc. Identidade ${p.docNumber || ''}`), W - M, FOOT_TOP + 5, {align:'right'});
+      doc.text(`página ${pg} de ${total}`, W - M, FOOT_TOP + 9, {align:'right'});
+    }
+
+    const per = opts.perPage || 4;
+    const areaH = FOOT_TOP - 4 - HEAD_BOTTOM;
+    const rowH = areaH / per;
+    const numW = 9, gap = 6;
+    const photoW = opts.showText ? Math.min(92, (CW - numW) * (per <= 2 ? .62 : .52)) : CW - numW;
+    const photoH = rowH - 5;
+    const tx = M + numW + photoW + gap, tw = W - M - tx;
+
+    for (let e = 0; e < entries.length; e++) {
+      const slot = e % per;
+      if (slot === 0) { if (e > 0) doc.addPage(); header(); }
+      const {it, ph, k, of} = entries[e];
+      const y = HEAD_BOTTOM + slot * rowH;
+      const st = statusOf(it);
+      doc.setFont('helvetica', 'normal'); doc.setFontSize(8.5); doc.setTextColor(60);
+      doc.text(`(${e + 1})`, M, y + 4);
+      // moldura da foto
+      const px = M + numW;
+      doc.setFillColor(242, 243, 244); doc.rect(px, y, photoW, photoH, 'F');
+      if (ph) {
+        const sc = Math.min(photoW / ph.w, photoH / ph.h); const w = ph.w * sc, h = ph.h * sc;
+        let pdata = null;
+        try { pdata = ph.src || await blobToDataURL(ph.blob); } catch (err) { pdata = null; }
+        if (pdata) doc.addImage(pdata, 'JPEG', px + (photoW - w) / 2, y + (photoH - h) / 2, w, h, undefined, 'FAST');
+        else { doc.setTextColor(150); doc.setFontSize(9); doc.text('Foto indisponível', px + photoW / 2, y + photoH / 2 + 1, {align:'center'}); }
+      } else {
+        doc.setTextColor(150); doc.setFontSize(9); doc.text('Sem foto', px + photoW / 2, y + photoH / 2 + 1, {align:'center'});
+      }
+      if (opts.showText) {
+        let ty = y + 4;
+        doc.setFillColor(...COL[st]); doc.rect(tx - 3, y, .9, photoH, 'F');
+        if (it.title) {
+          doc.setFont('helvetica', 'bold'); doc.setFontSize(10.5); doc.setTextColor(20);
+          const tl = doc.splitTextToSize(pdfSafe(it.title + (of > 1 ? ` (${k + 1}/${of})` : '')), tw).slice(0, 3);
+          doc.text(tl, tx, ty); ty += tl.length * 4.6 + 1.2;
+        }
+        doc.setFontSize(8.3); doc.setFont('helvetica', 'bold'); doc.setTextColor(25);
+        doc.text('Criado:', tx, ty); doc.setFont('helvetica', 'normal'); doc.setTextColor(60);
+        doc.text(pdfSafe(fmtDate(ph ? ph.takenAt : it.createdAt)), tx + 12, ty); ty += 4.6;
+        if (st !== 'none') {
+          doc.setFillColor(...COL[st]); doc.circle(tx + 1.3, ty - 1.1, 1.3, 'F');
+          doc.setFont('helvetica', 'bold'); doc.setTextColor(...COL[st]); doc.text(STATUS_LABEL[st], tx + 4, ty); ty += 5;
+        }
+        if (it.desc && k === 0) {
+          doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(50);
+          const maxLines = Math.max(1, Math.floor((y + photoH - ty) / 4.1));
+          let dl = doc.splitTextToSize(pdfSafe(it.desc), tw);
+          if (dl.length > maxLines) { dl = dl.slice(0, maxLines); dl[maxLines - 1] = dl[maxLines - 1].replace(/\s*\S*$/, '') + '…'; }
+          doc.text(dl, tx, ty + 1, {lineHeightFactor:1.3});
+        } else if (k > 0) {
+          doc.setFont('helvetica', 'italic'); doc.setFontSize(8.5); doc.setTextColor(120);
+          doc.text('Continuação do item anterior', tx, ty + 1);
+        }
+      }
+    }
+    const total = doc.getNumberOfPages();
+    for (let pg = 1; pg <= total; pg++) { doc.setPage(pg); footer(pg, total); }
+    hideToast();
+    if (await saveFile(opts.filename, doc.output('blob'))) toast('PDF pronto.');
+  } catch (e) { console.error(e); toast('Falha ao gerar o PDF: ' + e.message, 4000); }
+}
+
+/* ---------- backup ---------- */
+async function doBackup(){
+  toast('Preparando backup…', 120000);
+  try {
+    const [folders, projects, items, photos, settings] = await Promise.all(['folders', 'projects', 'items', 'photos', 'settings'].map(getAll));
+    const ph = [];
+    for (const x of photos) {
+      if (x.src) { ph.push(x); continue; }
+      try { ph.push({...x, src: await blobToDataURL(x.blob), tsrc: await blobToDataURL(x.thumb), blob: undefined, thumb: undefined}); } catch (err) {}
+    }
+    const st = [];
+    for (const x of settings) {
+      if (x.key === 'company' && x.value?.logo && !x.value.logo.d) {
+        try { st.push({key:x.key, value:{...x.value, logo:{d: await blobToDataURL(x.value.logo.blob), w: x.value.logo.w, h: x.value.logo.h}}}); }
+        catch (err) { st.push({key:x.key, value:{...x.value, logo:null}}); }
+      } else st.push(x);
+    }
+    const data = JSON.stringify({app:'relatorio-campo', version:2, exportedAt: Date.now(), folders, projects, items, photos: ph, settings: st});
+    hideToast();
+    if (await saveFile(`backup-relatorio-${new Date().toISOString().slice(0, 10)}.json`, new Blob([data]))) toast('Backup salvo.');
+  } catch (e) { toast('Falha no backup: ' + e.message); }
+}
+function dataURLToBlob(u){
+  const [h, b64] = u.split(','); const mime = (h.match(/data:([^;]+)/) || [])[1] || 'image/jpeg';
+  const bin = atob(b64); const arr = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+  return new Blob([arr], {type: mime});
+}
+async function restoreBackup(file){
+  try {
+    const j = JSON.parse(await file.text());
+    if (j.app !== 'relatorio-campo') throw new Error('arquivo não é um backup deste app');
+    await putMany('folders', j.folders || []);
+    await putMany('projects', j.projects || []);
+    await putMany('items', j.items || []);
+    await putMany('photos', (j.photos || []).map(x => x.src ? x : ({...x, src: x.blob, tsrc: x.thumb, blob: undefined, thumb: undefined})));
+    await putMany('settings', (j.settings || []).filter(x => x.key !== 'lastView').map(x => x.key === 'company' && x.value?.logo && !x.value.logo.d ? {key:x.key, value:{...x.value, logo:{d: x.value.logo.blob, w: x.value.logo.w, h: x.value.logo.h}}} : x));
+    toast(`Backup restaurado: ${(j.projects || []).length} relatórios.`); go({name:'folder', id:null});
+  } catch (e) { toast('Não foi possível restaurar: ' + e.message, 4000); }
+}
+
+/* ---------- eventos ---------- */
+let camTarget = null;
+let curFolderId = null;
+const curFolder = async () => view.name === 'folder' ? (view.id || null) : view.name === 'project' ? pid0((await get('projects', view.id)) || {}) : null;
+document.addEventListener('click', async e => {
+  const b = e.target.closest('[data-act]');
+  if (!b || b.disabled || b.closest('.sheet')) return;
+  const act = b.dataset.act, id = b.dataset.id;
+  // O iPhone só abre câmera/galeria/arquivos se o clique acontecer na hora do toque, sem esperar nada antes
+  if (act === 'cam-new' || act === 'cam-add' || act === 'gal-add') {
+    camTarget = act === 'cam-new' ? 'new' : view.id;
+    const inp = $(act === 'gal-add' ? '#in-gal' : '#in-cam'); inp.value = ''; inp.click();
+    if (view.name === 'item') saveFields();
+    return;
+  }
+  if (act === 'import') {
+    if (view.name === 'item') saveFields();
+    startImport(view.name === 'project' ? view.id : null, curFolderId);
+    return;
+  }
+  if (act === 'restore') { const i = $('#in-backup'); i.value = ''; i.click(); return; }
+  if (view.name === 'item') await saveFields();
+  switch (act) {
+    case 'tab': go({name: b.dataset.tab, id: null}); break;
+    case 'pend-filter': view = {name:'pend', filter: b.dataset.f}; setSetting('lastView', {name:'pend', id:null}).catch(() => {}); render().then(() => window.scrollTo(0, 0)); break;
+    case 'template': downloadTemplate(); break;
+    case 'backup': doBackup(); break;
+    case 'folder': go({name:'folder', id: id || null}); break;
+    case 'open-project': go({name:'project', id}); break;
+    case 'open-item': go({name:'item', id}); break;
+    case 'goto': if (id) go({name:'item', id}); break;
+    case 'filter': view.filter = b.dataset.f; render(); break;
+    case 'company': companySheet(); break;
+    case 'new-folder': { const fid = await curFolder();
+      promptSheet('Nova pasta', 'Nome da pasta', '', 'Criar pasta', async name => { await put('folders', {id: uid(), name, parentId: fid, createdAt: Date.now()}); render(); }); break; }
+    case 'new-report': { const fid = await curFolder();
+      promptSheet('Novo relatório', 'Título do relatório', '', 'Criar relatório', async name => { const p = await createProject(name, fid); go({name:'project', id: p.id}); }); break; }
+    case 'add-menu':
+      menu('', [
+        {icon:'folder', label:'Nova pasta', run: () => document.dispatchEvent(new CustomEvent('act', {detail:'new-folder'}))},
+        {icon:'clip', label:'Novo relatório', run: () => document.dispatchEvent(new CustomEvent('act', {detail:'new-report'}))},
+        {icon:'sheet', label:'Relatório a partir de planilha', run: () => startImport(null, curFolderId)}
+      ]); break;
+    case 'import': view.name === 'project' ? startImport(view.id, await curFolder()) : startImport(null, await curFolder()); break;
+    case 'app-menu':
+      menu('', [
+        {icon:'case', label:'Dados da empresa', run: companySheet},
+        {icon:'save', label:'Baixar planilha modelo', run: downloadTemplate},
+        {icon:'save', label:'Fazer backup de tudo', run: doBackup},
+        {icon:'upload', label:'Restaurar backup', run: () => { const i = $('#in-backup'); i.value = ''; i.click(); }}
+      ]); break;
+    case 'folder-info': {
+      if (!id) { companySheet(); break; }
+      const f = await get('folders', id);
+      menu(f.name, [
+        {icon:'edit', label:'Renomear pasta', run: () => promptSheet('Renomear pasta', 'Nome da pasta', f.name, 'Salvar', async v => { f.name = v; await put('folders', f); render(); })},
+        {icon:'move', label:'Mover para…', run: () => moveSheet('folder', f.id)},
+        {icon:'trash', label:'Excluir pasta', danger:true, run: () => confirmSheet('Excluir pasta?', `“${f.name}”, as subpastas, os relatórios e as fotos dentro dela serão apagados deste aparelho.`, 'Excluir', async () => {
+          const parent = pid0(f); await deleteFolderDeep(f.id); go({name:'folder', id: parent}); })}
+      ]); break;
+    }
+    case 'project-menu': {
+      const p = await get('projects', id || view.id);
+      menu(p.name, [
+        ...(view.name !== 'project' ? [{icon:'clip', label:'Abrir relatório', run: () => go({name:'project', id: p.id})}] : []),
+        {icon:'pdf', label:'Compartilhar PDF', run: () => shareSheet(p.id)},
+        {icon:'sheet', label:'Importar planilha neste relatório', run: () => startImport(p.id, pid0(p))},
+        {icon:'plus', label:'Adicionar item sem foto', run: async () => { const it = await createItem(p.id); go({name:'item', id: it.id}); }},
+        {icon:'text', label:'Descrição padrão', run: () => promptSheet('Descrição padrão', 'Usada em itens novos e na importação quando a planilha não tem descrição', p.defaultDesc || '', 'Salvar', async v => { p.defaultDesc = v; await put('projects', p); toast('Descrição padrão salva.'); }, true)},
+        {icon:'edit', label:'Renomear relatório', run: () => promptSheet('Renomear relatório', 'Título do relatório', p.name, 'Salvar', async v => { p.name = v; p.updatedAt = Date.now(); await put('projects', p); render(); })},
+        {icon:'move', label:'Mover para…', run: () => moveSheet('project', p.id)},
+        {icon:'trash', label:'Excluir relatório', danger:true, run: () => confirmSheet('Excluir relatório?', `“${p.name}”, todos os itens e fotos serão apagados deste aparelho.`, 'Excluir', async () => {
+          const its = await byIdx('items', 'projectId', p.id), phs = await byIdx('photos', 'projectId', p.id);
+          await delMany({projects:[p.id], items: its.map(x => x.id), photos: phs.map(x => x.id)}); go({name:'folder', id: pid0(p)}); })}
+      ]); break;
+    }
+    case 'share': shareSheet(view.id); break;
+    case 'add-item': { const it = await createItem(view.id); go({name:'item', id: it.id}); break; }
+    case 'add-item-here': { const cur = await get('items', view.id); const it = await createItem(cur.projectId); go({name:'item', id: it.id}); break; }
+    case 'next-pending': { const nx = (await byIdx('items', 'projectId', view.id)).sort(byOrder).find(x => !(x.photoIds || []).length); if (nx) go({name:'item', id: nx.id}); break; }
+    case 'cam-new': camTarget = 'new'; $('#in-cam').value = ''; $('#in-cam').click(); break;
+    case 'cam-add': camTarget = view.id; $('#in-cam').value = ''; $('#in-cam').click(); break;
+    case 'gal-add': camTarget = view.id; $('#in-gal').value = ''; $('#in-gal').click(); break;
+    case 'status': { const it = await get('items', view.id); const v = b.dataset.v; it.status = it.status === v ? null : v; it.updatedAt = Date.now(); await put('items', it); render(); break; }
+    case 'del-photo':
+      confirmSheet('Excluir foto?', 'A foto será apagada deste item.', 'Excluir', async () => {
+        const it = await get('items', view.id); it.photoIds = (it.photoIds || []).filter(x => x !== id);
+        await put('items', it); await delMany({photos:[id]}); dropUrl('f' + id); dropUrl('t' + id); render(); }); break;
+    case 'item-menu': {
+      const it = await get('items', view.id);
+      menu(it.title || 'Item', [
+        {icon:'img', label:'Adicionar da galeria', run: () => { camTarget = it.id; $('#in-gal').value = ''; $('#in-gal').click(); }},
+        {icon:'trash', label:'Excluir item', danger:true, run: () => confirmSheet('Excluir item?', `“${it.title || 'Sem título'}” e suas fotos serão apagados.`, 'Excluir', async () => {
+          await delMany({items:[it.id], photos: it.photoIds || []}); go({name:'project', id: it.projectId}); })}
+      ]); break;
+    }
+  }
+});
+document.addEventListener('act', e => { const fake = document.createElement('button'); fake.dataset.act = e.detail; fake.className = 'sr'; document.body.appendChild(fake); fake.click(); fake.remove(); });
+document.addEventListener('input', e => {
+  if (e.target.id === 'f-title') { const c = $('#f-count'); if (c) c.textContent = `${e.target.value.length}/100`; queueSave(); }
+  if (e.target.id === 'f-desc') { const c = $('#d-count'); if (c) c.textContent = `${e.target.value.length}/1000`; queueSave(); }
+});
+async function onPhotos(files){
+  if (!files.length) return;
+  toast('Salvando foto…', 30000);
+  try {
+    if (camTarget === 'new') { const it = await createItem(view.id); await addPhotos(it.id, files); hideToast(); go({name:'item', id: it.id}); }
+    else if (camTarget) { await addPhotos(camTarget, files); hideToast(); await render(); const strip = $('.photos'); if (strip) strip.scrollLeft = strip.scrollWidth; }
+  } catch (err) { toast('Não foi possível salvar a foto: ' + err.message); }
+}
+$('#in-cam').addEventListener('change', e => onPhotos([...e.target.files]));
+$('#in-gal').addEventListener('change', e => onPhotos([...e.target.files]));
+$('#in-sheet').addEventListener('change', e => { const f = e.target.files[0]; if (f) handleSheetFile(f); });
+$('#in-backup').addEventListener('change', e => { const f = e.target.files[0]; if (f) restoreBackup(f); });
+document.addEventListener('visibilitychange', () => { if (document.hidden) saveFields(); });
+
+/* ---------- início: volta para onde parou ---------- */
+(async () => {
+  try { navigator.storage?.persist?.(); } catch (e) {}
+  try { if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js'); } catch (e) {}
+  try {
+    const last = await getSetting('lastView');
+    if (last && ['home', 'pend', 'more'].includes(last.name)) view = {name: last.name};
+    else if (last && last.name) {
+      const store = last.name === 'folder' ? 'folders' : last.name === 'project' ? 'projects' : 'items';
+      if (last.name === 'folder' && !last.id) view = {name:'folder', id:null};
+      else if (last.id && await get(store, last.id)) view = {name: last.name, id: last.id};
+    }
+  } catch (e) {}
+  render();
+})();
+})();
+</script>
+</body>
+</html>
