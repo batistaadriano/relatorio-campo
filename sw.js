@@ -1,5 +1,5 @@
 // Guarda o app no aparelho para abrir sem internet
-const CACHE = 'relatorio-campo-v1';
+const CACHE = 'relatorio-campo-v2';
 const LIBS = ['https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js',
   'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js'];
 const FILES = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png', './apple-touch-icon.png', ...LIBS];
