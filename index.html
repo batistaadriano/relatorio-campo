@@ -147,6 +147,11 @@ main{padding:12px 16px 120px;max-width:760px;margin:0 auto}
 .thumb.empty svg{width:24px;height:24px}
 .item .body{min-width:0;flex:1}
 .item .date{font-size:12px;color:var(--muted)}
+.inum{display:inline-block;background:var(--accent-soft);color:var(--accent-text);font-weight:700;font-size:11.5px;padding:1px 7px;border-radius:6px;margin-right:6px}
+.photo .cap{padding:10px 12px 12px;background:var(--surface)}
+.photos{align-items:flex-start}
+.photo .n b{margin-right:6px}
+.photo .cap label{display:block;font-size:12.5px;font-weight:700;color:var(--accent-text);margin-bottom:5px}
 .item .title{font-weight:700;font-size:15.5px;margin:1px 0 2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .item .desc{font-size:13.5px;color:var(--muted);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;vertical-align:1px}
@@ -200,7 +205,7 @@ main{padding:12px 16px 120px;max-width:760px;margin:0 auto}
 .photo img{width:100%;height:auto;max-height:58vh;object-fit:contain;background:#000}
 .photo .del{position:absolute;top:10px;right:10px;width:40px;height:40px;border-radius:12px;background:rgba(0,0,0,.55);color:#fff;display:grid;place-items:center}
 .photo .del svg{width:20px;height:20px}
-.photo .n{position:absolute;left:10px;bottom:10px;background:rgba(0,0,0,.55);color:#fff;font-size:12px;padding:3px 9px;border-radius:8px}
+.photo .n{position:absolute;left:10px;top:10px;background:rgba(0,0,0,.55);color:#fff;font-size:12px;padding:3px 9px;border-radius:8px}
 .add-photo{border:2px dashed var(--line);border-radius:16px;padding:30px 16px;text-align:center;color:var(--muted);margin-bottom:12px;background:var(--surface)}
 .add-photo svg{width:38px;height:38px;margin:0 auto 8px;display:block;color:var(--dim)}
 .photo-actions{display:flex;gap:10px;margin-bottom:12px}
@@ -673,12 +678,13 @@ async function renderProject(){
   const bad = items.filter(i => i.status === 'anomalia');
   const shown = f === 'nophoto' ? noPhoto : f === 'bad' ? bad : items;
   const cards = shown.map(it => {
+    const num = items.indexOf(it) + 1;
     const ph = pmap.get((it.photoIds || [])[0]); const s = statusOf(it);
     const thumb = ph ? `<img class="thumb" src="${phSrc(ph, true)}" alt="" onerror="this.outerHTML='<div class=&quot;thumb empty&quot;>Refazer</div>'">` : `<div class="thumb empty">${I.cam}</div>`;
     const n = (it.photoIds || []).length;
     return `<button class="card item" data-act="open-item" data-id="${it.id}">${thumb}
-      <div class="body"><div class="date">${ph ? esc(fmtDate(ph.takenAt)) : 'Sem foto'}${n > 1 ? `  (${n} fotos)` : ''}</div>
-      <div class="title">${esc(it.title || 'Sem título')}</div>
+      <div class="body"><div class="date"><span class="inum">Item ${num}</span>${ph ? esc(fmtDate(ph.takenAt)) : 'Sem foto'}${n > 1 ? `  (${n} fotos)` : ''}</div>
+      <div class="title">${esc(it.title || 'Item ' + num)}</div>
       <div class="desc"><span class="dot ${s}"></span>${esc(it.desc || 'Sem descrição')}</div></div></button>`;
   }).join('');
   app.innerHTML = `
@@ -722,11 +728,13 @@ async function renderItem(){
     ? `<div class="photos ${photos.length > 1 ? 'multi' : ''}">${photos.map((ph, i) => `<figure class="photo">
         <img src="${phSrc(ph)}" alt="Foto ${i + 1}" onerror="this.outerHTML='<div class=&quot;add-photo&quot; style=&quot;margin:0&quot;>Esta foto não pôde ser lida. Exclua no ícone da lixeira e tire de novo.</div>'">
         <button class="del" data-act="del-photo" data-id="${ph.id}" aria-label="Excluir foto">${I.trash}</button>
-        <span class="n">${photos.length > 1 ? `${i + 1}/${photos.length}  ` : ''}${esc(fmtDate(ph.takenAt))}</span></figure>`).join('')}</div>`
+        <span class="n"><b>${i === 0 ? 'Item ' + (idx + 1) : 'Foto ' + (idx + 1) + '.' + i}</b>${esc(fmtDate(ph.takenAt))}</span>
+        <div class="cap"><label for="pn-${ph.id}">Observação da foto ${i === 0 ? (idx + 1) : (idx + 1) + '.' + i}</label>
+        <input class="inp pnote" id="pn-${ph.id}" data-ph="${ph.id}" maxlength="150" value="${esc(ph.note || '')}" placeholder="Ex.: Teste Fase R x S"></div></figure>`).join('')}</div>`
     : `<div class="add-photo">${I.cam}Nenhuma foto neste item</div>`;
   app.innerHTML = `
   <header class="top"><button class="icon-btn" data-act="open-project" data-id="${it.projectId}" aria-label="Voltar">${I.back}</button>
-    <h1>(${idx + 1}/${sib.length}) ${esc(p?.name || '')}<span class="sub">${esc(it.title || 'Sem título')}</span></h1>
+    <h1>Item ${idx + 1} de ${sib.length}<span class="sub">${esc(it.title || p?.name || '')}</span></h1>
     <button class="icon-btn" data-act="item-menu" aria-label="Mais opções">${I.more}</button></header>
   <main>
     ${photoHtml}
@@ -752,6 +760,10 @@ async function renderItem(){
       <button class="icon-btn" data-act="goto" data-id="${sib[idx + 1]?.id || ''}" ${idx < sib.length - 1 ? '' : 'disabled style="opacity:.3"'} aria-label="Próximo item">${I.right}</button></div>
   </div></nav>`;
 }
+const noteT = {};
+async function savePhotoNote(id, v){ clearTimeout(noteT[id]); const ph = await get('photos', id); if (ph && ph.note !== v) { ph.note = v; await put('photos', ph); } }
+function queuePhotoNote(id, v){ clearTimeout(noteT[id]); noteT[id] = setTimeout(() => savePhotoNote(id, v), 350); }
+document.addEventListener('change', e => { if (e.target.classList && e.target.classList.contains('pnote')) savePhotoNote(e.target.dataset.ph, e.target.value); });
 let saveT;
 function queueSave(){ clearTimeout(saveT); saveT = setTimeout(saveFields, 400); }
 async function saveFields(){
@@ -962,11 +974,13 @@ async function makePdf(pid, opts){
 
     // monta as linhas: uma por foto
     const entries = [];
-    for (const it of items) {
+    items.forEach((it, ii) => {
+      const num = ii + 1;
       const phs = (it.photoIds || []).map(id => pm.get(id)).filter(Boolean);
-      if (!phs.length) { if (opts.includeEmpty) entries.push({it, ph:null, k:0, of:0}); continue; }
-      phs.forEach((ph, k) => entries.push({it, ph, k, of: phs.length}));
-    }
+      if (!phs.length) { if (opts.includeEmpty) entries.push({it, ph:null, k:0, of:0, num}); return; }
+      phs.forEach((ph, k) => entries.push({it, ph, k, of: phs.length, num}));
+    });
+    const nItems = new Set(entries.map(x => x.it.id)).size;
     if (!entries.length) { hideToast(); toast('Nenhuma foto para colocar no relatório.'); return; }
 
     let logo = null;
@@ -990,7 +1004,7 @@ async function makePdf(pid, opts){
         doc.text(pdfSafe(ini), lx + lw / 2, ly + lh / 2 + 1.4, {align:'center'});
       }
       const rowsL = [['Companhia:', company.name], ['Contato:', company.contact], ['Fone:', company.phone], ['E-mail:', company.email]];
-      const rowsR = [['Título:', p.name], ['Grupo:', folder?.name || '—'], ['Criado:', fmtDay(p.createdAt)], ['Nº de itens:', String(entries.length)]];
+      const rowsR = [['Título:', p.name], ['Grupo:', folder?.name || '—'], ['Criado:', fmtDay(p.createdAt)], ['Nº de itens:', String(nItems) + (entries.length !== nItems ? ' (' + entries.length + ' fotos)' : '')]];
       const draw = (rows, x, lab, valW) => rows.forEach(([l, v], i) => {
         const y = 14 + i * 5;
         doc.setFont('helvetica', 'bold'); doc.setFontSize(8.2); doc.setTextColor(25); doc.text(l, x, y);
@@ -1013,7 +1027,7 @@ async function makePdf(pid, opts){
     const per = opts.perPage || 4;
     const areaH = FOOT_TOP - 4 - HEAD_BOTTOM;
     const rowH = areaH / per;
-    const numW = 9, gap = 6;
+    const numW = 12, gap = 6;
     const photoW = opts.showText ? Math.min(92, (CW - numW) * (per <= 2 ? .62 : .52)) : CW - numW;
     const photoH = rowH - 5;
     const tx = M + numW + photoW + gap, tw = W - M - tx;
@@ -1021,11 +1035,12 @@ async function makePdf(pid, opts){
     for (let e = 0; e < entries.length; e++) {
       const slot = e % per;
       if (slot === 0) { if (e > 0) doc.addPage(); header(); }
-      const {it, ph, k, of} = entries[e];
+      const {it, ph, k, of, num} = entries[e];
+      const label = k === 0 ? String(num) : num + '.' + k;
       const y = HEAD_BOTTOM + slot * rowH;
       const st = statusOf(it);
       doc.setFont('helvetica', 'normal'); doc.setFontSize(8.5); doc.setTextColor(60);
-      doc.text(`(${e + 1})`, M, y + 4);
+      doc.text(`(${label})`, M, y + 4);
       // moldura da foto
       const px = M + numW;
       doc.setFillColor(242, 243, 244); doc.rect(px, y, photoW, photoH, 'F');
@@ -1041,17 +1056,23 @@ async function makePdf(pid, opts){
       if (opts.showText) {
         let ty = y + 4;
         doc.setFillColor(...COL[st]); doc.rect(tx - 3, y, .9, photoH, 'F');
-        if (it.title) {
-          doc.setFont('helvetica', 'bold'); doc.setFontSize(10.5); doc.setTextColor(20);
-          const tl = doc.splitTextToSize(pdfSafe(it.title + (of > 1 ? ` (${k + 1}/${of})` : '')), tw).slice(0, 3);
-          doc.text(tl, tx, ty); ty += tl.length * 4.6 + 1.2;
+        {
+          const ttl = (k === 0 ? 'Item ' : 'Foto ') + label + (it.title ? ' – ' + it.title : '');
+          doc.setFont('helvetica', 'bold'); doc.setFontSize(k === 0 ? 10.5 : 9.5); doc.setTextColor(k === 0 ? 20 : 70);
+          const tl = doc.splitTextToSize(pdfSafe(ttl), tw).slice(0, 3);
+          doc.text(tl, tx, ty); ty += tl.length * (k === 0 ? 4.6 : 4.2) + 1.2;
         }
         doc.setFontSize(8.3); doc.setFont('helvetica', 'bold'); doc.setTextColor(25);
         doc.text('Criado:', tx, ty); doc.setFont('helvetica', 'normal'); doc.setTextColor(60);
         doc.text(pdfSafe(fmtDate(ph ? ph.takenAt : it.createdAt)), tx + 12, ty); ty += 4.6;
-        if (st !== 'none') {
+        if (st !== 'none' && k === 0) {
           doc.setFillColor(...COL[st]); doc.circle(tx + 1.3, ty - 1.1, 1.3, 'F');
           doc.setFont('helvetica', 'bold'); doc.setTextColor(...COL[st]); doc.text(STATUS_LABEL[st], tx + 4, ty); ty += 5;
+        }
+        if (ph && ph.note) {
+          doc.setFont('helvetica', 'bold'); doc.setFontSize(9.5); doc.setTextColor(20);
+          const nl = doc.splitTextToSize(pdfSafe('Obs.: ' + ph.note), tw).slice(0, 3);
+          doc.text(nl, tx, ty + 0.5); ty += nl.length * 4.4 + 1.5;
         }
         if (it.desc && k === 0) {
           doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(50);
@@ -1059,9 +1080,6 @@ async function makePdf(pid, opts){
           let dl = doc.splitTextToSize(pdfSafe(it.desc), tw);
           if (dl.length > maxLines) { dl = dl.slice(0, maxLines); dl[maxLines - 1] = dl[maxLines - 1].replace(/\s*\S*$/, '') + '…'; }
           doc.text(dl, tx, ty + 1, {lineHeightFactor:1.3});
-        } else if (k > 0) {
-          doc.setFont('helvetica', 'italic'); doc.setFontSize(8.5); doc.setTextColor(120);
-          doc.text('Continuação do item anterior', tx, ty + 1);
         }
       }
     }
@@ -1214,6 +1232,7 @@ document.addEventListener('act', e => { const fake = document.createElement('but
 document.addEventListener('input', e => {
   if (e.target.id === 'f-title') { const c = $('#f-count'); if (c) c.textContent = `${e.target.value.length}/100`; queueSave(); }
   if (e.target.id === 'f-desc') { const c = $('#d-count'); if (c) c.textContent = `${e.target.value.length}/1000`; queueSave(); }
+  if (e.target.classList.contains('pnote')) queuePhotoNote(e.target.dataset.ph, e.target.value);
 });
 async function onPhotos(files){
   if (!files.length) return;
