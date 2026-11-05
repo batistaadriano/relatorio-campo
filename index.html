@@ -254,6 +254,32 @@ textarea.inp{min-height:120px;resize:vertical;line-height:1.5}
 .toast{position:fixed;left:50%;bottom:calc(100px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:30;
   background:var(--text);color:var(--bg);padding:11px 16px;border-radius:12px;font-size:14px;max-width:90vw;text-align:center}
 .hidden{display:none!important}
+.ptitle{font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--accent-text);margin:0 0 12px}
+.tseg{grid-template-columns:repeat(auto-fit,minmax(90px,1fr))}
+.tseg button[aria-pressed="true"]{background:var(--accent-soft);border-color:var(--accent);color:var(--accent-text)}
+.calc{font-size:22px;font-weight:700;padding:6px 2px}
+.tpls{display:grid;gap:8px}
+.tpl{display:flex;gap:12px;align-items:flex-start;padding:12px;border:1px solid var(--line);border-radius:12px;background:var(--bg)}
+.tpl input{width:20px;height:20px;margin:2px 0 0;accent-color:var(--accent);flex:none}
+.tpl b{display:block;font-size:15px}
+.tpl small{display:block;font-size:13px;color:var(--muted)}
+.tpl:has(input:checked){border-color:var(--accent);background:var(--accent-soft)}
+.photo .n{position:static;display:block;background:var(--surface);color:var(--muted);padding:10px 12px 0;border-radius:0;font-size:12px}
+.photo .cap{padding-top:6px}
+.photo .sketch{position:absolute;top:10px;right:58px;height:40px;padding:0 12px;border-radius:12px;background:rgba(0,0,0,.55);color:#fff;display:flex;align-items:center;gap:6px;font-size:13.5px;font-weight:600}
+.photo .sketch svg{width:18px;height:18px}
+.sk{position:fixed;inset:0;z-index:15;background:#0B0D10;color:#fff;display:flex;flex-direction:column;padding:env(safe-area-inset-top,0px) 0 env(safe-area-inset-bottom,0px)}
+.sk-top{display:flex;align-items:center;justify-content:space-between;padding:8px 10px}
+.sk-top button{min-height:44px;padding:0 14px;border-radius:12px;font-weight:600;color:#fff}
+.sk-top .sk-save{background:#1D5CFF}
+.sk-stage{flex:1;min-height:0;display:grid;place-items:center;padding:6px}
+.sk-stage canvas{touch-action:none;border-radius:6px}
+.sk-tools{padding:8px 10px 10px;display:grid;gap:8px}
+.sk-row{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;align-items:center}
+.sk-row button{min-height:40px;padding:0 12px;border-radius:10px;background:#1E232B;color:#fff;font-size:14px;font-weight:600;white-space:nowrap}
+.sk-row button[aria-pressed="true"]{background:#1D5CFF}
+.sk-row .sk-c{width:36px;min-height:36px;height:36px;padding:0;border-radius:50%;border:2px solid #3A414C;flex:none}
+.sk-row .sk-c[aria-pressed="true"]{outline:3px solid #fff;outline-offset:1px}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
 </style>
 </head>
@@ -685,7 +711,7 @@ async function renderProject(){
     return `<button class="card item" data-act="open-item" data-id="${it.id}">${thumb}
       <div class="body"><div class="date"><span class="inum">Item ${num}</span>${ph ? esc(fmtDate(ph.takenAt)) : 'Sem foto'}${n > 1 ? `  (${n} fotos)` : ''}</div>
       <div class="title">${esc(it.title || 'Item ' + num)}</div>
-      <div class="desc"><span class="dot ${s}"></span>${esc(it.desc || 'Sem descrição')}</div></div></button>`;
+      <div class="desc"><span class="dot ${s}"></span>${esc(itemSummary(p, it) || it.desc || 'Sem descrição')}</div></div></button>`;
   }).join('');
   app.innerHTML = `
   <header class="top"><button class="icon-btn" data-act="folder" data-id="${pid0(p) || ''}" aria-label="Voltar">${I.back}</button>
@@ -728,9 +754,10 @@ async function renderItem(){
     ? `<div class="photos ${photos.length > 1 ? 'multi' : ''}">${photos.map((ph, i) => `<figure class="photo">
         <img src="${phSrc(ph)}" alt="Foto ${i + 1}" onerror="this.outerHTML='<div class=&quot;add-photo&quot; style=&quot;margin:0&quot;>Esta foto não pôde ser lida. Exclua no ícone da lixeira e tire de novo.</div>'">
         <button class="del" data-act="del-photo" data-id="${ph.id}" aria-label="Excluir foto">${I.trash}</button>
+        <button class="sketch" data-act="sketch" data-id="${ph.id}">${I.edit}Riscar</button>
         <span class="n"><b>${i === 0 ? 'Item ' + (idx + 1) : 'Foto ' + (idx + 1) + '.' + i}</b>${esc(fmtDate(ph.takenAt))}</span>
         <div class="cap"><label for="pn-${ph.id}">Observação da foto ${i === 0 ? (idx + 1) : (idx + 1) + '.' + i}</label>
-        <input class="inp pnote" id="pn-${ph.id}" data-ph="${ph.id}" maxlength="150" value="${esc(ph.note || '')}" placeholder="Ex.: Teste Fase R x S"></div></figure>`).join('')}</div>`
+        <input class="inp pnote" id="pn-${ph.id}" data-ph="${ph.id}" maxlength="150" value="${esc(ph.note || '')}" placeholder="${esc(tplOf(p).noteHint)}"></div></figure>`).join('')}</div>`
     : `<div class="add-photo">${I.cam}Nenhuma foto neste item</div>`;
   app.innerHTML = `
   <header class="top"><button class="icon-btn" data-act="open-project" data-id="${it.projectId}" aria-label="Voltar">${I.back}</button>
@@ -747,10 +774,11 @@ async function renderItem(){
       <div class="field"><label class="lb" for="f-desc">Descrição</label>
         <textarea class="inp" id="f-desc" maxlength="1000" placeholder="Adicionar uma descrição">${esc(it.desc)}</textarea>
         <div class="counter" id="d-count">${(it.desc || '').length}/1000</div></div>
-      <div class="field"><span class="lb">Resultado</span>
+      ${tplOf(p).status ? `<div class="field"><span class="lb">Resultado</span>
         <div class="seg"><button class="ok" data-act="status" data-v="ok" aria-pressed="${s === 'ok'}">Sem anomalia</button>
-        <button class="anomalia" data-act="status" data-v="anomalia" aria-pressed="${s === 'anomalia'}">Com anomalia</button></div></div>
+        <button class="anomalia" data-act="status" data-v="anomalia" aria-pressed="${s === 'anomalia'}">Com anomalia</button></div></div>` : ''}
     </div>
+    ${fieldsHtml(tplOf(p), it)}
   </main>
   <nav class="bottom"><div class="bottom-inner">
     <div class="side"><button class="icon-btn" data-act="goto" data-id="${sib[idx - 1]?.id || ''}" ${idx > 0 ? '' : 'disabled style="opacity:.3"'} aria-label="Item anterior">${I.left}</button>
@@ -771,10 +799,145 @@ async function saveFields(){
   if (view.name !== 'item') return;
   const t = $('#f-title'), d = $('#f-desc'); if (!t || !d) return;
   const it = await get('items', view.id); if (!it) return;
-  if (it.title === t.value && it.desc === d.value) return;
-  it.title = t.value; it.desc = d.value; it.updatedAt = Date.now();
+  const fl = {...(it.fields || {})}; let chg = false;
+  document.querySelectorAll('.tf').forEach(x => { if ((fl[x.dataset.fk] || '') !== x.value) { fl[x.dataset.fk] = x.value; chg = true; } });
+  if (it.title === t.value && it.desc === d.value && !chg) return;
+  it.title = t.value; it.desc = d.value; it.fields = fl; it.updatedAt = Date.now();
   await put('items', it);
   const sub = $('.top .sub'); if (sub) sub.textContent = it.title || 'Sem título';
+}
+
+/* ---------- modelos de formulário ---------- */
+const TEMPLATES = {
+  ensaio: {name:'Ensaio / Teste', desc:'Fotos numeradas com observação e resultado', status:true, noteHint:'Ex.: Teste Fase R x S', fields:[]},
+  pendencia: {name:'Pendências', desc:'Local, responsável, prazo, prioridade e situação', status:false, noteHint:'Ex.: Antes / Depois', fields:[
+    {k:'local', l:'Local', t:'text', ph:'Ex.: 2º pavimento, sala 204'},
+    {k:'resp', l:'Responsável', t:'text', ph:'Ex.: Elétrica – João'},
+    {k:'prazo', l:'Prazo', t:'date'},
+    {k:'prio', l:'Prioridade', t:'seg', opts:['Urgente', 'Alta', 'Normal', 'Baixa']},
+    {k:'sit', l:'Situação', t:'seg', opts:['Aberta', 'Em andamento', 'Resolvida']}]},
+  arcond: {name:'Ar-condicionado', desc:'TAG, dados do equipamento e medições', status:true, noteHint:'Ex.: Manifold – pressão de sucção', fields:[
+    {k:'tag', pl:'TAG', l:'TAG do equipamento', t:'text', ph:'Ex.: SPLIT-03'},
+    {k:'modelo', pl:'Modelo', l:'Fabricante / modelo', t:'text', ph:'Ex.: Daikin FTKP'},
+    {k:'cap', pl:'Capacidade', l:'Capacidade', t:'text', ph:'Ex.: 36.000 BTU/h'},
+    {k:'gas', pl:'Fluido', l:'Fluido refrigerante', t:'text', ph:'Ex.: R-410A'},
+    {k:'v', pl:'Tensão', l:'Tensão (V)', t:'num'}, {k:'a', pl:'Corrente', l:'Corrente (A)', t:'num'},
+    {k:'ps', pl:'P. sucção', l:'Pressão sucção (psi)', t:'num'}, {k:'pd', pl:'P. descarga', l:'Pressão descarga (psi)', t:'num'},
+    {k:'tr', pl:'T. retorno', l:'Temp. retorno (°C)', t:'num'}, {k:'ti', pl:'T. insuflamento', l:'Temp. insuflamento (°C)', t:'num'},
+    {k:'dt', pl:'Dif. temperatura', l:'ΔT retorno − insuflamento (°C)', t:'calc'}]}
+};
+const tplOf = p => TEMPLATES[p?.template] || TEMPLATES.ensaio;
+const numVal = v => { const n = parseFloat(String(v ?? '').replace(',', '.')); return isNaN(n) ? null : n; };
+function fieldValue(f, fl){
+  if (f.t === 'calc') { const a = numVal(fl.tr), b = numVal(fl.ti); return a !== null && b !== null ? (a - b).toFixed(1).replace('.', ',') : ''; }
+  if (f.t === 'date' && fl[f.k]) { const [y, m, d] = fl[f.k].split('-'); return d ? `${d}/${m}/${y}` : fl[f.k]; }
+  return fl[f.k] || '';
+}
+function fieldsHtml(tpl, it){
+  const fl = it.fields || {};
+  if (!tpl.fields.length) return '';
+  const one = f => {
+    if (f.t === 'seg') return `<div class="field"><span class="lb">${esc(f.l)}</span><div class="seg tseg">${f.opts.map(o =>
+      `<button data-act="tfield" data-k="${f.k}" data-v="${esc(o)}" aria-pressed="${fl[f.k] === o}">${esc(o)}</button>`).join('')}</div></div>`;
+    if (f.t === 'calc') return `<div class="field"><span class="lb">${esc(f.l)}</span><div class="calc" id="calc-${f.k}">${esc(fieldValue(f, fl)) || '—'}</div></div>`;
+    const type = f.t === 'date' ? 'date' : 'text';
+    const mode = f.t === 'num' ? 'inputmode="decimal"' : '';
+    return `<div class="field"><label class="lb" for="tf-${f.k}">${esc(f.l)}</label><input class="inp tf" id="tf-${f.k}" data-fk="${f.k}" type="${type}" ${mode} value="${esc(fl[f.k] || '')}" placeholder="${esc(f.ph || '')}"></div>`;
+  };
+  const nums = tpl.fields.filter(f => f.t === 'num');
+  const rest = tpl.fields.filter(f => f.t !== 'num' && f.t !== 'calc');
+  const calc = tpl.fields.filter(f => f.t === 'calc');
+  return `<div class="panel"><div class="ptitle">${esc(tpl.name)}</div>${rest.map(one).join('')}
+    ${nums.length ? `<div class="ptitle" style="margin-top:6px">Medições</div><div class="two">${nums.map(one).join('')}</div>` : ''}${calc.map(one).join('')}</div>`;
+}
+function itemSummary(p, it){
+  const tpl = tplOf(p), fl = it.fields || {};
+  if (p?.template === 'pendencia') return [fl.sit || 'Aberta', fl.prio, fl.local, fl.resp].filter(Boolean).join(' · ');
+  if (p?.template === 'arcond') return [fl.tag, fl.cap, fieldValue(tpl.fields.find(f => f.k === 'dt'), fl) ? 'ΔT ' + fieldValue(tpl.fields.find(f => f.k === 'dt'), fl) + ' °C' : ''].filter(Boolean).join(' · ');
+  return '';
+}
+function newReportSheet(fid){
+  const s = openSheet(`<h2>Novo relatório</h2>
+    <div class="field"><label class="lb" for="nr-name">Título do relatório</label><input class="inp" id="nr-name" maxlength="100" placeholder="Ex.: [906] LINK-01"></div>
+    <span class="lb">Modelo</span><div class="tpls">${Object.entries(TEMPLATES).map(([k, t], i) =>
+      `<label class="tpl"><input type="radio" name="nr-tpl" value="${k}" ${i === 0 ? 'checked' : ''}><span><b>${esc(t.name)}</b><small>${esc(t.desc)}</small></span></label>`).join('')}</div>
+    <button class="btn primary block" id="nr-go" style="margin-top:14px">Criar relatório</button>`);
+  setTimeout(() => $('#nr-name', s).focus(), 50);
+  $('#nr-go', s).addEventListener('click', async () => {
+    const name = $('#nr-name', s).value.trim(); if (!name) { $('#nr-name', s).focus(); return; }
+    const p = await createProject(name, fid); p.template = $('input[name="nr-tpl"]:checked', s).value; await put('projects', p);
+    closeSheet(); go({name:'project', id: p.id});
+  });
+}
+
+/* ---------- croqui: riscar sobre a foto ---------- */
+async function openSketch(phId){
+  const ph = await get('photos', phId);
+  const base = ph && (ph.orig || ph.src);
+  if (!base) { toast('Esta foto não pode ser editada. Tire de novo.'); return; }
+  const img = await new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = base; });
+  const W = img.naturalWidth, H = img.naturalHeight, LW = Math.max(W, H) / 160;
+  const COLORS = ['#FF2D2D', '#FFD60A', '#1D5CFF', '#22C55E', '#FFFFFF', '#111111'];
+  const st = {tool:'pen', color: COLORS[0], shapes: [], cur: null};
+  const ov = document.createElement('div'); ov.className = 'sk';
+  ov.innerHTML = `<div class="sk-top"><button data-k="cancel">Cancelar</button><b>Croqui</b><button data-k="save" class="sk-save">Salvar</button></div>
+    <div class="sk-stage"><canvas></canvas></div>
+    <div class="sk-tools">
+      <div class="sk-row">${[['pen', 'Caneta'], ['arrow', 'Seta'], ['circle', 'Círculo'], ['rect', 'Retângulo'], ['text', 'Texto']].map(([k, l]) =>
+        `<button data-tool="${k}" aria-pressed="${k === 'pen'}">${l}</button>`).join('')}</div>
+      <div class="sk-row">${COLORS.map((c, i) => `<button class="sk-c" data-color="${c}" style="background:${c}" aria-label="Cor ${i + 1}" aria-pressed="${i === 0}"></button>`).join('')}
+        <button data-k="undo">Desfazer</button>${ph.orig ? '<button data-k="reset">Original</button>' : ''}</div></div>`;
+  document.body.appendChild(ov);
+  const cv = $('canvas', ov), stage = $('.sk-stage', ov), ctx = cv.getContext('2d');
+  const fit = () => { const r = stage.getBoundingClientRect(); const s = Math.min(r.width / W, r.height / H);
+    cv.style.width = W * s + 'px'; cv.style.height = H * s + 'px'; cv.width = Math.round(W * s * devicePixelRatio); cv.height = Math.round(H * s * devicePixelRatio); draw(ctx, cv.width / W); };
+  function shape(c, sh, k){
+    c.save(); c.strokeStyle = c.fillStyle = sh.color; c.lineWidth = LW * k; c.lineCap = c.lineJoin = 'round';
+    const [a, b] = [sh.pts[0], sh.pts[sh.pts.length - 1]];
+    if (sh.tool === 'pen') { c.beginPath(); sh.pts.forEach((p, i) => i ? c.lineTo(p.x * k, p.y * k) : c.moveTo(p.x * k, p.y * k)); c.stroke(); }
+    if (sh.tool === 'rect') c.strokeRect(Math.min(a.x, b.x) * k, Math.min(a.y, b.y) * k, Math.abs(b.x - a.x) * k, Math.abs(b.y - a.y) * k);
+    if (sh.tool === 'circle') { c.beginPath(); c.ellipse((a.x + b.x) / 2 * k, (a.y + b.y) / 2 * k, Math.abs(b.x - a.x) / 2 * k + 1, Math.abs(b.y - a.y) / 2 * k + 1, 0, 0, 7); c.stroke(); }
+    if (sh.tool === 'arrow') { const ang = Math.atan2(b.y - a.y, b.x - a.x), hl = LW * 5 * k;
+      c.beginPath(); c.moveTo(a.x * k, a.y * k); c.lineTo(b.x * k, b.y * k); c.stroke();
+      c.beginPath(); c.moveTo(b.x * k, b.y * k); c.lineTo(b.x * k - hl * Math.cos(ang - .45), b.y * k - hl * Math.sin(ang - .45));
+      c.lineTo(b.x * k - hl * Math.cos(ang + .45), b.y * k - hl * Math.sin(ang + .45)); c.closePath(); c.fill(); }
+    if (sh.tool === 'text') { const fs = LW * 7 * k; c.font = `700 ${fs}px -apple-system, Arial, sans-serif`; c.textBaseline = 'top';
+      c.lineWidth = fs / 6; c.strokeStyle = sh.color === '#111111' ? '#FFFFFF' : '#000000'; c.strokeText(sh.text, a.x * k, a.y * k); c.fillText(sh.text, a.x * k, a.y * k); }
+    c.restore();
+  }
+  function draw(c, k){ c.clearRect(0, 0, W * k, H * k); c.drawImage(img, 0, 0, W * k, H * k); st.shapes.forEach(s => shape(c, s, k)); if (st.cur) shape(c, st.cur, k); }
+  const pos = e => { const r = cv.getBoundingClientRect(); return {x: (e.clientX - r.left) / r.width * W, y: (e.clientY - r.top) / r.height * H}; };
+  cv.addEventListener('pointerdown', e => {
+    e.preventDefault(); const p = pos(e);
+    if (st.tool === 'text') { promptSheet('Texto no croqui', 'Texto', '', 'Inserir', v => { st.shapes.push({tool:'text', color: st.color, pts:[p], text: v}); fit(); }); return; }
+    cv.setPointerCapture(e.pointerId); st.cur = {tool: st.tool, color: st.color, pts:[p, p]};
+  });
+  cv.addEventListener('pointermove', e => { if (!st.cur) return; const p = pos(e); if (st.cur.tool === 'pen') st.cur.pts.push(p); else st.cur.pts[1] = p; draw(ctx, cv.width / W); });
+  const end = () => { if (st.cur) { st.shapes.push(st.cur); st.cur = null; draw(ctx, cv.width / W); } };
+  cv.addEventListener('pointerup', end); cv.addEventListener('pointercancel', end);
+  const close = () => { window.removeEventListener('resize', fit); ov.remove(); };
+  ov.addEventListener('click', async e => {
+    const t = e.target.closest('button'); if (!t) return;
+    if (t.dataset.tool) { st.tool = t.dataset.tool; ov.querySelectorAll('[data-tool]').forEach(x => x.setAttribute('aria-pressed', x === t)); }
+    if (t.dataset.color) { st.color = t.dataset.color; ov.querySelectorAll('[data-color]').forEach(x => x.setAttribute('aria-pressed', x === t)); }
+    if (t.dataset.k === 'undo') { st.shapes.pop(); fit(); }
+    if (t.dataset.k === 'cancel') close();
+    if (t.dataset.k === 'reset') { ph.src = ph.orig; ph.tsrc = await thumbOf(img); delete ph.orig; await put('photos', ph); close(); toast('Foto original restaurada.'); render(); }
+    if (t.dataset.k === 'save') {
+      if (!st.shapes.length) { close(); return; }
+      const out = document.createElement('canvas'); out.width = W; out.height = H; draw(out.getContext('2d'), 1);
+      if (!ph.orig) ph.orig = base;
+      ph.src = out.toDataURL('image/jpeg', .85); ph.tsrc = await thumbOf(out); await put('photos', ph);
+      close(); toast('Croqui salvo.'); render();
+    }
+  });
+  window.addEventListener('resize', fit); requestAnimationFrame(fit);
+}
+async function thumbOf(src){
+  const w0 = src.naturalWidth || src.width, h0 = src.naturalHeight || src.height, s = Math.min(1, 320 / Math.max(w0, h0));
+  const c = document.createElement('canvas'); c.width = Math.round(w0 * s); c.height = Math.round(h0 * s);
+  const x = c.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, c.width, c.height); x.drawImage(src, 0, 0, c.width, c.height);
+  return c.toDataURL('image/jpeg', .7);
 }
 
 /* ---------- empresa ---------- */
@@ -928,7 +1091,7 @@ async function downloadTemplate(){
 /* ---------- PDF (layout do modelo, melhorado) ---------- */
 function blobToDataURL(b){ return new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = () => rej(r.error); r.readAsDataURL(b); }); }
 const WINANSI = '€‚ƒ„…†‡ˆ‰Š‹ŒŽ‘’“”•–—˜™š›œžŸ';
-const PDF_MAP = {'Ω':'Ohm','Ω':'Ohm','≤':'<=','≥':'>=','≈':'~','√':'raiz','Δ':'Delta','φ':'fi','θ':'teta','→':'->','✓':'OK'};
+const PDF_MAP = {'−':'-','Ω':'Ohm','Ω':'Ohm','≤':'<=','≥':'>=','≈':'~','√':'raiz','Δ':'Delta','φ':'fi','θ':'teta','→':'->','✓':'OK'};
 const pdfSafe = s => String(s ?? '').replace(/[^\x00-\xFF]/g, c => PDF_MAP[c] || (WINANSI.includes(c) ? c : '?'));
 
 async function shareSheet(pid){
@@ -1004,7 +1167,7 @@ async function makePdf(pid, opts){
         doc.text(pdfSafe(ini), lx + lw / 2, ly + lh / 2 + 1.4, {align:'center'});
       }
       const rowsL = [['Companhia:', company.name], ['Contato:', company.contact], ['Fone:', company.phone], ['E-mail:', company.email]];
-      const rowsR = [['Título:', p.name], ['Grupo:', folder?.name || '—'], ['Criado:', fmtDay(p.createdAt)], ['Nº de itens:', String(nItems) + (entries.length !== nItems ? ' (' + entries.length + ' fotos)' : '')]];
+      const rowsR = [['Título:', p.name], ['Grupo:', (folder?.name || '—') + (p.template && p.template !== 'ensaio' ? ' · ' + tplOf(p).name : '')], ['Criado:', fmtDay(p.createdAt)], ['Nº de itens:', String(nItems) + (entries.length !== nItems ? ' (' + entries.length + ' fotos)' : '')]];
       const draw = (rows, x, lab, valW) => rows.forEach(([l, v], i) => {
         const y = 14 + i * 5;
         doc.setFont('helvetica', 'bold'); doc.setFontSize(8.2); doc.setTextColor(25); doc.text(l, x, y);
@@ -1068,6 +1231,22 @@ async function makePdf(pid, opts){
         if (st !== 'none' && k === 0) {
           doc.setFillColor(...COL[st]); doc.circle(tx + 1.3, ty - 1.1, 1.3, 'F');
           doc.setFont('helvetica', 'bold'); doc.setTextColor(...COL[st]); doc.text(STATUS_LABEL[st], tx + 4, ty); ty += 5;
+        }
+        const tplP = tplOf(p);
+        if (k === 0 && tplP.fields.length) {
+          const fl = it.fields || {};
+          const vals = tplP.fields.map(f => [(f.pl ? f.pl + (/\((.*)\)$/.test(f.l) ? ' (' + f.l.match(/\((.*)\)$/)[1] + ')' : '') : f.l), fieldValue(f, fl)]).filter(x => x[1]);
+          const cols = vals.length > 4 ? 2 : 1, cw2 = tw / cols;
+          doc.setFontSize(8);
+          vals.forEach(([l, v], i) => {
+            const cx = tx + (i % cols) * cw2, cy = ty + Math.floor(i / cols) * 3.9;
+            if (cy > y + photoH - 2) return;
+            doc.setFont('helvetica', 'bold'); doc.setTextColor(25); const lt = pdfSafe(l.replace(/ \(.*\)$/, '') + ':');
+            doc.text(lt, cx, cy); const lw2 = doc.getTextWidth(lt) + 1;
+            doc.setFont('helvetica', 'normal'); doc.setTextColor(50);
+            doc.text(fitFont(pdfSafe(v + (/\((.*)\)$/.test(l) ? ' ' + l.match(/\((.*)\)$/)[1] : '')), cw2 - lw2 - 2, 8, 6.5), cx + lw2, cy);
+          });
+          ty += Math.ceil(vals.length / cols) * 3.9 + 1.5;
         }
         if (ph && ph.note) {
           doc.setFont('helvetica', 'bold'); doc.setFontSize(9.5); doc.setTextColor(20);
@@ -1166,7 +1345,7 @@ document.addEventListener('click', async e => {
     case 'new-folder': { const fid = await curFolder();
       promptSheet('Nova pasta', 'Nome da pasta', '', 'Criar pasta', async name => { await put('folders', {id: uid(), name, parentId: fid, createdAt: Date.now()}); render(); }); break; }
     case 'new-report': { const fid = await curFolder();
-      promptSheet('Novo relatório', 'Título do relatório', '', 'Criar relatório', async name => { const p = await createProject(name, fid); go({name:'project', id: p.id}); }); break; }
+      newReportSheet(fid); break; }
     case 'add-menu':
       menu('', [
         {icon:'folder', label:'Nova pasta', run: () => document.dispatchEvent(new CustomEvent('act', {detail:'new-folder'}))},
@@ -1213,6 +1392,9 @@ document.addEventListener('click', async e => {
     case 'cam-new': camTarget = 'new'; $('#in-cam').value = ''; $('#in-cam').click(); break;
     case 'cam-add': camTarget = view.id; $('#in-cam').value = ''; $('#in-cam').click(); break;
     case 'gal-add': camTarget = view.id; $('#in-gal').value = ''; $('#in-gal').click(); break;
+    case 'sketch': openSketch(id); break;
+    case 'tfield': { const it = await get('items', view.id); it.fields = {...(it.fields || {})}; const k = b.dataset.k, v = b.dataset.v;
+      it.fields[k] = it.fields[k] === v ? '' : v; it.updatedAt = Date.now(); await put('items', it); render(); break; }
     case 'status': { const it = await get('items', view.id); const v = b.dataset.v; it.status = it.status === v ? null : v; it.updatedAt = Date.now(); await put('items', it); render(); break; }
     case 'del-photo':
       confirmSheet('Excluir foto?', 'A foto será apagada deste item.', 'Excluir', async () => {
@@ -1233,6 +1415,7 @@ document.addEventListener('input', e => {
   if (e.target.id === 'f-title') { const c = $('#f-count'); if (c) c.textContent = `${e.target.value.length}/100`; queueSave(); }
   if (e.target.id === 'f-desc') { const c = $('#d-count'); if (c) c.textContent = `${e.target.value.length}/1000`; queueSave(); }
   if (e.target.classList.contains('pnote')) queuePhotoNote(e.target.dataset.ph, e.target.value);
+  if (e.target.classList.contains('tf')) { queueSave(); if (e.target.dataset.fk === 'tr' || e.target.dataset.fk === 'ti') { const c = $('#calc-dt'); if (c) c.textContent = fieldValue({t:'calc'}, {tr: $('#tf-tr')?.value, ti: $('#tf-ti')?.value}) || '—'; } }
 });
 async function onPhotos(files){
   if (!files.length) return;
