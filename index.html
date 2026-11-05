@@ -253,6 +253,7 @@ textarea.inp{min-height:120px;resize:vertical;line-height:1.5}
 
 .toast{position:fixed;left:50%;bottom:calc(100px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:30;
   background:var(--text);color:var(--bg);padding:11px 16px;border-radius:12px;font-size:14px;max-width:90vw;text-align:center}
+.hero .sync{margin-top:4px;font-size:12.5px;opacity:.95;font-weight:600}
 .hidden{display:none!important}
 .ptitle{font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--accent-text);margin:0 0 12px}
 .tseg{grid-template-columns:repeat(auto-fit,minmax(90px,1fr))}
@@ -359,8 +360,11 @@ async function os(name, mode = 'readonly'){ const d = await idb(); return d.tran
 const getAll = async n => P((await os(n)).getAll());
 const byIdx = async (n, idx, v) => P((await os(n)).index(idx).getAll(v));
 const get = async (n, k) => P((await os(n)).get(k));
-const put = async (n, v) => P((await os(n, 'readwrite')).put(v));
-async function putMany(n, arr){
+const SYNCED = ['folders', 'projects', 'items', 'photos'];
+const rawPut = async (n, v) => P((await os(n, 'readwrite')).put(v));
+const put = async (n, v) => { if (SYNCED.includes(n) && v) v.mt = Date.now(); const r = await rawPut(n, v); cloudPush(n, [v]); return r; };
+async function putMany(n, arr){ if (SYNCED.includes(n)) arr.forEach(v => { v.mt = v.mt || Date.now(); }); await rawPutMany(n, arr); cloudPush(n, arr); }
+async function rawPutMany(n, arr){
   const d = await idb();
   return new Promise((res, rej) => {
     const t = d.transaction(n, 'readwrite'); const s = t.objectStore(n);
@@ -368,7 +372,8 @@ async function putMany(n, arr){
     t.oncomplete = () => res(); t.onerror = () => rej(t.error);
   });
 }
-async function delMany(map){
+async function delMany(map){ await rawDelMany(map); cloudDelete(map); }
+async function rawDelMany(map){
   const d = await idb();
   return new Promise((res, rej) => {
     const t = d.transaction(Object.keys(map), 'readwrite');
@@ -377,7 +382,7 @@ async function delMany(map){
   });
 }
 const getSetting = async k => (await get('settings', k))?.value;
-const setSetting = (k, v) => put('settings', {key:k, value:v});
+const setSetting = (k, v) => { if (k === 'company' && v) { v.mt = Date.now(); cloudPushCompany(v); } return rawPut('settings', {key:k, value:v}); };
 async function getCompany(){ return {...COMPANY_DEFAULT, ...((await getSetting('company')) || {})}; }
 async function nextDocNumber(){ const n = ((await getSetting('docSeq')) || 0) + 1; await setSetting('docSeq', n); return n; }
 
@@ -389,7 +394,7 @@ function fmtDay(ts){ const d = new Date(ts); return `${d.toLocaleDateString('pt-
 function fmtDate(ts){ return `${fmtDay(ts)} ${new Date(ts).toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'})}`; }
 const urls = new Map();
 function blobUrl(key, blob){ if (!blob) return ''; if (!urls.has(key)) urls.set(key, URL.createObjectURL(blob)); return urls.get(key); }
-const phSrc = (ph, t) => (t ? ph.tsrc : ph.src) || blobUrl((t ? 't' : 'f') + ph.id, t ? ph.thumb : ph.blob);
+const phSrc = (ph, t) => (t ? ph.tsrc : (ph.src || ph.tsrc)) || blobUrl((t ? 't' : 'f') + ph.id, t ? ph.thumb : ph.blob);
 function dropUrl(key){ if (urls.has(key)) { URL.revokeObjectURL(urls.get(key)); urls.delete(key); } }
 let toastT;
 function toast(msg, ms = 2600){
@@ -428,8 +433,8 @@ async function addPhotos(itemId, files){
   const it = await get('items', itemId); if (!it) return;
   for (const f of files) {
     const {make} = await processImage(f);
-    const full = await make(1800, .82), th = await make(320, .7);
-    const ph = {id: uid(), itemId, projectId: it.projectId, src: full.d, tsrc: th.d, w: full.w, h: full.h, takenAt: Date.now()};
+    const full = await make(1600, .78), th = await make(320, .7);
+    const ph = {id: uid(), itemId, projectId: it.projectId, src: full.d, tsrc: th.d, srcV: uid(), w: full.w, h: full.h, takenAt: Date.now()};
     await put('photos', ph);
     it.photoIds = [...(it.photoIds || []), ph.id];
   }
@@ -587,7 +592,7 @@ async function renderHome(){
   <header class="hero"><div class="bar"><div class="avatar" aria-hidden="true">${esc(ini)}</div>
     <div class="hi"><small>${esc(todayCap)}</small><b>Olá, ${esc(first)}</b></div>
     <button class="icon-btn" data-act="company" aria-label="Dados da empresa">${I.case}</button></div>
-    <div class="co">${I.case}<span>${esc(company.name || '')}</span></div></header>
+    <div class="co">${I.case}<span>${esc(company.name || '')}</span></div><div class="co sync hidden" data-sync></div></header>
   <div class="quick">
     <button class="qa" data-act="new-report"><i>${I.plus}</i>Novo relatório</button>
     <button class="qa" data-act="import"><i>${I.sheet}</i>Importar planilha</button>
@@ -681,6 +686,10 @@ async function renderMore(){
     <div class="ltitle"><div><h1>Mais</h1><p>Configurações e cópias de segurança</p></div></div>
     <div class="group">${row('company', I.case, 'Dados da empresa', esc(company.name || 'Logo, contato e endereço do relatório'), 'blue')}
       ${row('template', I.sheet, 'Baixar planilha modelo', 'Exemplo de colunas para importar')}</div>
+    <div class="sec"><h2>Equipe na nuvem</h2></div>
+    <div class="group">${cloud.on || cloud.orgId ? row('team', I.case, 'Equipe ' + esc(cloud.orgName || ''), esc(cloud.email || '') + ' · ' + esc(ROLE_LABEL[cloud.role] || ''), 'blue') + row('cloud-logout', I.upload, 'Sair da conta', 'Os relatórios continuam neste celular')
+      : row('cloud-login', I.upload, 'Entrar ou criar conta', 'Sincronize os relatórios com a equipe', 'blue')}</div>
+    <p class="hint sync hidden" data-sync style="padding:0 4px"></p>
     <div class="sec"><h2>Backup</h2></div>
     <div class="group">${row('backup', I.save, 'Fazer backup de tudo', 'Salva pastas, relatórios e fotos num arquivo')}
       ${row('restore', I.upload, 'Restaurar backup', 'Traz os dados de outro aparelho')}</div>
@@ -922,12 +931,12 @@ async function openSketch(phId){
     if (t.dataset.color) { st.color = t.dataset.color; ov.querySelectorAll('[data-color]').forEach(x => x.setAttribute('aria-pressed', x === t)); }
     if (t.dataset.k === 'undo') { st.shapes.pop(); fit(); }
     if (t.dataset.k === 'cancel') close();
-    if (t.dataset.k === 'reset') { ph.src = ph.orig; ph.tsrc = await thumbOf(img); delete ph.orig; await put('photos', ph); close(); toast('Foto original restaurada.'); render(); }
+    if (t.dataset.k === 'reset') { ph.src = ph.orig; ph.tsrc = await thumbOf(img); delete ph.orig; ph.srcV = uid(); await put('photos', ph); close(); toast('Foto original restaurada.'); render(); }
     if (t.dataset.k === 'save') {
       if (!st.shapes.length) { close(); return; }
       const out = document.createElement('canvas'); out.width = W; out.height = H; draw(out.getContext('2d'), 1);
       if (!ph.orig) ph.orig = base;
-      ph.src = out.toDataURL('image/jpeg', .85); ph.tsrc = await thumbOf(out); await put('photos', ph);
+      ph.src = out.toDataURL('image/jpeg', .8); ph.tsrc = await thumbOf(out); ph.srcV = uid(); await put('photos', ph);
       close(); toast('Croqui salvo.'); render();
     }
   });
@@ -938,6 +947,302 @@ async function thumbOf(src){
   const c = document.createElement('canvas'); c.width = Math.round(w0 * s); c.height = Math.round(h0 * s);
   const x = c.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, c.width, c.height); x.drawImage(src, 0, 0, c.width, c.height);
   return c.toDataURL('image/jpeg', .7);
+}
+
+/* ---------- nuvem: login, equipe e sincronização (Firebase) ---------- */
+const FB_URL = 'https://www.gstatic.com/firebasejs/10.12.2/';
+const FB_CONFIG = {apiKey:'AIzaSyAvNpuEMf4CWZk4jg6R0PMOP-XYa7fhf_Q', authDomain:'relatorio-campo-c2677.firebaseapp.com',
+  projectId:'relatorio-campo-c2677', storageBucket:'relatorio-campo-c2677.firebasestorage.app', messagingSenderId:'228409042659',
+  appId:'1:228409042659:web:c925ce4e70fc5a23cf47d6'};
+const ROLE_LABEL = {owner:'Dono', tech:'Técnico', viewer:'Só leitura'};
+let fb = null, unsubs = [], pending = 0, viewerWarned = false;
+const cloud = {on:false, orgId:null, role:null, orgName:'', email:''};
+const blobQueue = new Set(); let blobBusy = false;
+
+async function ensureCloud(){
+  if (fb) return fb;
+  const [{initializeApp}, A, F] = await Promise.all([import(FB_URL + 'firebase-app.js'), import(FB_URL + 'firebase-auth.js'), import(FB_URL + 'firebase-firestore.js')]);
+  const app = initializeApp(FB_CONFIG);
+  const auth = A.initializeAuth(app, {persistence: [A.indexedDBLocalPersistence, A.browserLocalPersistence]});
+  let db;
+  try { db = F.initializeFirestore(app, {localCache: F.persistentLocalCache({tabManager: F.persistentSingleTabManager()})}); }
+  catch (e) { db = F.initializeFirestore(app, {localCache: F.memoryLocalCache()}); }
+  fb = {app, auth, db, A, F};
+  return fb;
+}
+const oref = (...p) => fb.F.doc(fb.db, 'orgs', cloud.orgId, ...p);
+const clean = v => JSON.parse(JSON.stringify(v, (k, x) => (x instanceof Blob ? undefined : x)));
+function track(pr){
+  pending++; updateChip();
+  pr.catch(e => { console.warn('nuvem', e); if (e && e.code === 'permission-denied') toast('A nuvem recusou uma alteração: sem permissão.'); })
+    .finally(() => { pending--; updateChip(); });
+}
+function syncText(){
+  if (!cloud.on) return '';
+  if (!navigator.onLine) return pending ? `Sem internet: ${pending} ${pending === 1 ? 'alteração aguardando' : 'alterações aguardando'}` : 'Sem internet: tudo salvo no celular';
+  if (pending || blobQueue.size) return 'Sincronizando…';
+  return 'Sincronizado com a equipe';
+}
+function updateChip(){ document.querySelectorAll('[data-sync]').forEach(el => { const t = syncText(); el.textContent = t; el.classList.toggle('hidden', !t); }); }
+window.addEventListener('online', () => { updateChip(); pumpBlobs(); });
+window.addEventListener('offline', updateChip);
+
+async function fitDoc(src){
+  if (!src || src.length < 950000) return src;
+  const img = await new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = src; });
+  let s = 1, q = .72, out = src;
+  for (let k = 0; k < 6 && out.length >= 950000; k++) {
+    const c = document.createElement('canvas'); c.width = Math.round(img.naturalWidth * s); c.height = Math.round(img.naturalHeight * s);
+    c.getContext('2d').drawImage(img, 0, 0, c.width, c.height); out = c.toDataURL('image/jpeg', q);
+    q = Math.max(.5, q - .08); s *= .85;
+  }
+  return out;
+}
+function pushPhoto(ph){
+  const {F} = fb;
+  track(F.setDoc(oref('photos', ph.id), clean({id: ph.id, itemId: ph.itemId, projectId: ph.projectId, w: ph.w, h: ph.h, takenAt: ph.takenAt,
+    note: ph.note || '', tsrc: ph.tsrc || '', srcV: ph.srcV || '', hasOrig: !!ph.orig, mt: ph.mt || Date.now()})));
+  if (ph.src && ph.srcV && ph._bv !== ph.srcV) {
+    const v = ph.srcV;
+    (async () => {
+      track(F.setDoc(oref('blobs', ph.id), {src: await fitDoc(ph.src), srcV: v}));
+      if (ph.orig) track(F.setDoc(oref('blobs', ph.id + '__o'), {src: await fitDoc(ph.orig)}));
+      const cur = await get('photos', ph.id); if (cur && cur.srcV === v) { cur._bv = v; await rawPut('photos', cur); }
+    })();
+  }
+}
+function cloudPush(n, arr){
+  if (!cloud.on || !fb || !SYNCED.includes(n)) return;
+  if (cloud.role === 'viewer') { if (!viewerWarned) { viewerWarned = true; toast('Seu acesso é só de leitura: esta alteração fica só neste celular.', 4000); } return; }
+  for (const v of arr) {
+    if (!v || !v.id) continue;
+    if (n === 'photos') pushPhoto(v);
+    else track(fb.F.setDoc(oref(n, v.id), clean(v)));
+  }
+}
+function cloudDelete(map){
+  if (!cloud.on || !fb || cloud.role === 'viewer') return;
+  for (const [n, ids] of Object.entries(map)) {
+    if (!SYNCED.includes(n)) continue;
+    for (const id of ids) {
+      track(fb.F.deleteDoc(oref(n, id)));
+      if (n === 'photos') { track(fb.F.deleteDoc(oref('blobs', id))); track(fb.F.deleteDoc(oref('blobs', id + '__o'))); }
+    }
+  }
+}
+function cloudPushCompany(v){
+  if (!cloud.on || !fb || cloud.role === 'viewer') return;
+  const c = {...v, logo: v.logo && v.logo.d ? {d: v.logo.d, w: v.logo.w, h: v.logo.h} : null};
+  track(fb.F.setDoc(oref('meta', 'company'), clean(c)));
+}
+
+let renderT;
+function softRender(){
+  clearTimeout(renderT);
+  renderT = setTimeout(() => {
+    const a = document.activeElement;
+    if (document.querySelector('.sk') || document.querySelector('#backdrop') || (a && /INPUT|TEXTAREA/.test(a.tagName))) { softRender(); return; }
+    const y = window.scrollY; render().then(() => window.scrollTo(0, y));
+  }, 700);
+}
+async function applySnap(n, snap){
+  let changed = false;
+  for (const ch of snap.docChanges()) {
+    if (ch.doc.metadata.hasPendingWrites) continue;
+    const id = ch.doc.id;
+    if (ch.type === 'removed') { if (await get(n, id)) { await rawDelMany({[n]: [id]}); changed = true; } continue; }
+    const r = ch.doc.data(), loc = await get(n, id);
+    if (loc && (loc.mt || 0) >= (r.mt || 0)) continue;
+    if (n === 'photos') {
+      const m = {...(loc || {}), ...r};
+      if (!loc || loc.srcV !== r.srcV || !loc.src) { m.src = loc && loc.srcV === r.srcV ? loc.src : (loc ? loc.src : undefined); m._want = r.srcV; blobQueue.add(id); }
+      m._bv = r.srcV;
+      if (!r.hasOrig) delete m.orig;
+      await rawPut(n, m);
+    } else await rawPut(n, r);
+    changed = true;
+  }
+  if (changed) softRender();
+  pumpBlobs();
+}
+async function pumpBlobs(){
+  if (blobBusy || !blobQueue.size || !navigator.onLine || !cloud.on) return;
+  blobBusy = true; updateChip();
+  try {
+    for (const id of [...blobQueue]) {
+      try {
+        const d = await fb.F.getDoc(oref('blobs', id));
+        const ph = await get('photos', id);
+        if (ph && d.exists()) {
+          ph.src = d.data().src; ph._want = null;
+          if (ph.hasOrig) { const o = await fb.F.getDoc(oref('blobs', id + '__o')); if (o.exists()) ph.orig = o.data().src; }
+          await rawPut('photos', ph); softRender();
+        }
+        blobQueue.delete(id);
+      } catch (e) { console.warn('foto', e); break; }
+    }
+  } finally { blobBusy = false; updateChip(); }
+}
+function stopListeners(){ unsubs.forEach(u => { try { u(); } catch (e) {} }); unsubs = []; }
+function startListeners(){
+  stopListeners();
+  const {F, db} = fb;
+  for (const n of SYNCED) unsubs.push(F.onSnapshot(F.collection(db, 'orgs', cloud.orgId, n), s => applySnap(n, s), e => console.warn(n, e)));
+  unsubs.push(F.onSnapshot(oref('meta', 'company'), async d => {
+    if (!d.exists() || d.metadata.hasPendingWrites) return;
+    const r = d.data(), loc = (await getSetting('company')) || {};
+    if ((loc.mt || 0) >= (r.mt || 0)) return;
+    await rawPut('settings', {key:'company', value: r}); softRender();
+  }, e => console.warn('empresa', e)));
+}
+async function initialUpload(){
+  const n0 = pending;
+  for (const n of ['folders', 'projects', 'items']) cloudPush(n, await getAll(n));
+  for (const ph of await getAll('photos')) {
+    if (ph.src && !ph.srcV) { ph.srcV = uid(); await rawPut('photos', ph); }
+    cloudPush('photos', [ph]);
+  }
+  const c = await getSetting('company'); if (c) cloudPushCompany(c);
+  return pending - n0;
+}
+async function connectOrg(orgId, role, orgName){
+  Object.assign(cloud, {on:true, orgId, role, orgName, email: fb.auth.currentUser?.email || ''});
+  await rawPut('settings', {key:'cloud', value: {orgId, role, orgName, email: cloud.email}});
+  const flag = 'cloudInit_' + orgId;
+  if (!(await getSetting(flag)) && role !== 'viewer') { await initialUpload(); await rawPut('settings', {key: flag, value: true}); }
+  startListeners(); updateChip(); render();
+}
+function cloudOff(){ stopListeners(); Object.assign(cloud, {on:false, orgId:null, role:null, orgName:'', email:''}); updateChip(); }
+
+async function afterLogin(user){
+  const {F, db} = fb;
+  const u = await F.getDoc(F.doc(db, 'users', user.uid));
+  if (u.exists() && u.data().orgId) {
+    const orgId = u.data().orgId;
+    const m = await F.getDoc(F.doc(db, 'orgs', orgId, 'members', user.uid));
+    if (m.exists()) { const o = await F.getDoc(F.doc(db, 'orgs', orgId)); closeSheet(); await connectOrg(orgId, m.data().role, o.exists() ? o.data().name : ''); toast('Conectado à equipe.'); return; }
+  }
+  const email = (user.email || '').toLowerCase();
+  const inv = await F.getDoc(F.doc(db, 'invites', email));
+  if (inv.exists()) {
+    const iv = inv.data();
+    openSheet(`<h2>Convite para equipe</h2><p class="hint" style="margin:-6px 0 16px">Você foi convidado para <b>${esc(iv.orgName)}</b> como <b>${esc(ROLE_LABEL[iv.role] || iv.role)}</b>. Os relatórios deste celular também vão para a equipe.</p>
+      <button class="btn primary block" data-c="join">Entrar na equipe</button>`, s => s.addEventListener('click', async ev => {
+        if (!ev.target.closest('[data-c="join"]')) return;
+        try {
+          await F.setDoc(F.doc(db, 'orgs', iv.orgId, 'members', user.uid), {email, role: iv.role, joinedAt: Date.now()});
+          await F.setDoc(F.doc(db, 'users', user.uid), {orgId: iv.orgId});
+          await F.deleteDoc(F.doc(db, 'invites', email));
+          closeSheet(); await connectOrg(iv.orgId, iv.role, iv.orgName); toast(`Bem-vindo à equipe ${iv.orgName}.`);
+        } catch (e) { toast('Não foi possível entrar: ' + (e.code || e.message), 4000); }
+      }));
+    return;
+  }
+  const comp = await getCompany();
+  openSheet(`<h2>Criar a sua empresa</h2><p class="hint" style="margin:-6px 0 14px">A empresa reúne a equipe e os relatórios na nuvem. Depois você convida os técnicos pelo e-mail.</p>
+    <div class="field"><label class="lb" for="org-name">Nome da empresa</label><input class="inp" id="org-name" maxlength="80" value="${esc(comp.name || '')}"></div>
+    <button class="btn primary block" data-c="mk">Criar empresa</button>`, s => s.addEventListener('click', async ev => {
+      if (!ev.target.closest('[data-c="mk"]')) return;
+      const name = $('#org-name', s).value.trim(); if (!name) { $('#org-name', s).focus(); return; }
+      ev.target.closest('button').disabled = true;
+      try {
+        const orgId = uid() + uid();
+        await F.setDoc(F.doc(db, 'orgs', orgId), {name, ownerUid: user.uid, createdAt: Date.now()});
+        await F.setDoc(F.doc(db, 'orgs', orgId, 'members', user.uid), {email, role:'owner', joinedAt: Date.now()});
+        await F.setDoc(F.doc(db, 'users', user.uid), {orgId});
+        closeSheet(); await connectOrg(orgId, 'owner', name); toast('Empresa criada. Agora convide a equipe em Mais → Equipe.', 4000);
+      } catch (e) { ev.target.closest('button').disabled = false; toast('Não foi possível criar: ' + (e.code || e.message), 4000); }
+    }));
+}
+const AUTH_ERR = {'auth/invalid-credential':'E-mail ou senha incorretos.', 'auth/wrong-password':'E-mail ou senha incorretos.', 'auth/user-not-found':'Não existe conta com este e-mail. Toque em “Criar conta”.',
+  'auth/email-already-in-use':'Este e-mail já tem conta. Toque em “Entrar”.', 'auth/weak-password':'A senha precisa ter pelo menos 6 caracteres.', 'auth/invalid-email':'E-mail inválido.',
+  'auth/network-request-failed':'Sem internet. Para entrar pela primeira vez é preciso estar conectado.', 'auth/too-many-requests':'Muitas tentativas. Espere alguns minutos.'};
+async function loginSheet(){
+  try { await ensureCloud(); } catch (e) { toast('Sem internet para carregar a nuvem. Tente quando estiver conectado.', 4000); return; }
+  const s = openSheet(`<h2>Equipe na nuvem</h2>
+    <p class="hint" style="margin:-6px 0 14px">Entre com o seu e-mail para sincronizar os relatórios com a equipe. Sem internet, tudo fica salvo no celular e é enviado depois.</p>
+    <div class="field"><label class="lb" for="lg-email">E-mail</label><input class="inp" id="lg-email" type="email" autocomplete="username" inputmode="email"></div>
+    <div class="field"><label class="lb" for="lg-pass">Senha</label><input class="inp" id="lg-pass" type="password" autocomplete="current-password" minlength="6"></div>
+    <p class="hint" id="lg-err" style="color:var(--bad);min-height:1.2em;margin:-6px 0 10px"></p>
+    <div class="row"><button class="btn primary" data-c="in">Entrar</button><button class="btn ghost" data-c="up">Criar conta</button></div>
+    <button class="text-btn" data-c="reset" style="margin-top:8px">Esqueci a senha</button>`);
+  s.addEventListener('click', async ev => {
+    const b = ev.target.closest('[data-c]'); if (!b) return;
+    const email = $('#lg-email', s).value.trim(), pass = $('#lg-pass', s).value, err = $('#lg-err', s);
+    const {A, auth} = fb; err.textContent = '';
+    if (!email) { $('#lg-email', s).focus(); return; }
+    if (b.dataset.c === 'reset') {
+      try { await A.sendPasswordResetEmail(auth, email); err.style.color = 'var(--ok)'; err.textContent = 'Enviamos um e-mail para criar uma nova senha.'; }
+      catch (e) { err.textContent = AUTH_ERR[e.code] || e.message; }
+      return;
+    }
+    if (pass.length < 6) { err.textContent = AUTH_ERR['auth/weak-password']; return; }
+    b.disabled = true;
+    try {
+      const cred = b.dataset.c === 'up' ? await A.createUserWithEmailAndPassword(auth, email, pass) : await A.signInWithEmailAndPassword(auth, email, pass);
+      await afterLogin(cred.user);
+    } catch (e) { err.textContent = AUTH_ERR[e.code] || ('Erro: ' + (e.code || e.message)); }
+    b.disabled = false;
+  });
+}
+async function teamSheet(){
+  if (!cloud.on) return loginSheet();
+  if (!navigator.onLine) { toast('Para ver a equipe é preciso internet.'); return; }
+  const {F, db} = fb; const isOwner = cloud.role === 'owner';
+  let members = [], invites = [];
+  try {
+    members = (await F.getDocs(F.collection(db, 'orgs', cloud.orgId, 'members'))).docs.map(d => ({uid: d.id, ...d.data()}));
+    if (isOwner) invites = (await F.getDocs(F.query(F.collection(db, 'invites'), F.where('orgId', '==', cloud.orgId)))).docs.map(d => ({email: d.id, ...d.data()}));
+  } catch (e) { toast('Não foi possível carregar a equipe: ' + (e.code || e.message)); return; }
+  const me = fb.auth.currentUser?.uid;
+  const s = openSheet(`<h2>Equipe ${esc(cloud.orgName)}</h2>
+    <div class="group" style="box-shadow:none;border:1px solid var(--line)">${members.map(m => `<div class="lrow"><div class="main" style="cursor:default"><span class="ico blue">${I.case}</span>
+      <div class="txt"><div class="nm">${esc(m.email)}${m.uid === me ? ' (você)' : ''}</div><div class="mt">${esc(ROLE_LABEL[m.role] || m.role)}</div></div></div>
+      ${isOwner && m.uid !== me ? `<button class="icon-btn" data-rm="${m.uid}" aria-label="Remover">${I.trash}</button>` : ''}</div>`).join('')}
+      ${invites.map(v => `<div class="lrow"><div class="main" style="cursor:default"><span class="ico">${I.upload}</span>
+      <div class="txt"><div class="nm">${esc(v.email)}</div><div class="mt">Convite pendente: ${esc(ROLE_LABEL[v.role] || v.role)}</div></div></div>
+      <button class="icon-btn" data-cancel="${esc(v.email)}" aria-label="Cancelar convite">${I.trash}</button></div>`).join('')}</div>
+    ${isOwner ? `<div class="field" style="margin-top:14px"><label class="lb" for="iv-email">Convidar pelo e-mail</label><input class="inp" id="iv-email" type="email" inputmode="email" placeholder="tecnico@empresa.com.br"></div>
+      <div class="field"><label class="lb" for="iv-role">Acesso</label><select class="inp" id="iv-role"><option value="tech">Técnico: cria e edita relatórios</option><option value="viewer">Só leitura: acompanha (ex.: cliente)</option></select></div>
+      <button class="btn primary block" data-c="inv">Enviar convite</button>
+      <button class="btn ghost block" data-c="share" style="margin-top:8px">${I.upload}Mandar o link do app</button>
+      <p class="hint">A pessoa abre o link, adiciona à tela de início e entra em Mais → Equipe na nuvem com este mesmo e-mail. Ela entra na equipe automaticamente.</p>` : ''}`);
+  s.addEventListener('click', async ev => {
+    const b = ev.target.closest('button'); if (!b) return;
+    if (b.dataset.c === 'share') {
+      const text = `Instale o app de relatórios da ${cloud.orgName}: ${location.origin + location.pathname}\nDepois toque em Mais → Equipe na nuvem e crie a conta com o seu e-mail.`;
+      if (navigator.share) navigator.share({text}).catch(() => {}); else { try { await navigator.clipboard.writeText(text); toast('Link copiado.'); } catch (e) { toast(text, 6000); } }
+      return;
+    }
+    try {
+      if (b.dataset.c === 'inv') {
+        const em = $('#iv-email', s).value.trim().toLowerCase();
+        if (!/^\S+@\S+\.\S+$/.test(em)) { $('#iv-email', s).focus(); return; }
+        b.disabled = true;
+        await F.setDoc(F.doc(db, 'invites', em), {orgId: cloud.orgId, orgName: cloud.orgName, role: $('#iv-role', s).value, invitedBy: cloud.email, createdAt: Date.now()});
+        toast('Convite criado. Mande o link do app para a pessoa.', 4000); teamSheet();
+      }
+      if (b.dataset.rm) { await F.deleteDoc(F.doc(db, 'orgs', cloud.orgId, 'members', b.dataset.rm)); toast('Removido da equipe.'); teamSheet(); }
+      if (b.dataset.cancel) { await F.deleteDoc(F.doc(db, 'invites', b.dataset.cancel)); toast('Convite cancelado.'); teamSheet(); }
+    } catch (e) { b.disabled = false; toast('Não foi possível: ' + (e.code || e.message), 4000); }
+  });
+}
+async function cloudLogout(){
+  confirmSheet('Sair da conta?', 'Os relatórios continuam neste celular, mas param de sincronizar até você entrar de novo.', 'Sair', async () => {
+    try { await fb.A.signOut(fb.auth); } catch (e) {}
+    cloudOff(); await rawDelMany({settings:['cloud']}); toast('Você saiu da conta.'); render();
+  });
+}
+async function cloudBoot(){
+  const saved = await getSetting('cloud');
+  if (!saved || !saved.orgId) return;
+  Object.assign(cloud, {orgId: saved.orgId, role: saved.role, orgName: saved.orgName, email: saved.email});
+  try { await ensureCloud(); } catch (e) { setTimeout(cloudBoot, 15000); return; }
+  fb.A.onAuthStateChanged(fb.auth, user => {
+    if (user) { cloud.on = true; cloud.email = user.email || cloud.email; startListeners(); pumpBlobs(); }
+    else cloudOff();
+    updateChip();
+  });
 }
 
 /* ---------- empresa ---------- */
@@ -1333,6 +1638,9 @@ document.addEventListener('click', async e => {
   if (view.name === 'item') await saveFields();
   switch (act) {
     case 'tab': go({name: b.dataset.tab, id: null}); break;
+    case 'cloud-login': loginSheet(); break;
+    case 'team': teamSheet(); break;
+    case 'cloud-logout': cloudLogout(); break;
     case 'pend-filter': view = {name:'pend', filter: b.dataset.f}; setSetting('lastView', {name:'pend', id:null}).catch(() => {}); render().then(() => window.scrollTo(0, 0)); break;
     case 'template': downloadTemplate(); break;
     case 'backup': doBackup(); break;
@@ -1444,7 +1752,9 @@ document.addEventListener('visibilitychange', () => { if (document.hidden) saveF
       else if (last.id && await get(store, last.id)) view = {name: last.name, id: last.id};
     }
   } catch (e) {}
-  render();
+  await render();
+  updateChip();
+  cloudBoot().catch(e => console.warn('nuvem', e));
 })();
 })();
 </script>
