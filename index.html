@@ -96,7 +96,7 @@ main{padding:12px 16px 120px;max-width:760px;margin:0 auto}
 .prio{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
 .pr{background:var(--surface);border-radius:14px;padding:12px;box-shadow:var(--shadow);display:flex;align-items:center;gap:8px;font-size:13.5px;font-weight:600;text-align:left}
 .pr svg{width:16px;height:16px;flex:none}
-.pr span{flex:1}
+.pr span{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .pr b{font-size:15px;color:var(--text)}
 .pr.bad{color:var(--bad)} .pr.ok{color:var(--ok)} .pr.warn{color:var(--warn)} .pr.blue{color:var(--accent-text)}
 
@@ -258,6 +258,13 @@ textarea.inp{min-height:120px;resize:vertical;line-height:1.5}
 .gsec{font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--accent-text)}
 .gq{font-size:21px;font-weight:700;line-height:1.3;margin:6px 0 14px}
 .gph{display:flex;gap:8px;overflow-x:auto;margin-bottom:12px}.gph img{width:92px;height:92px;object-fit:cover;border-radius:12px;flex:none}
+.insp{background:var(--surface);border-radius:16px;padding:14px;box-shadow:var(--shadow);margin-bottom:12px}
+.insp-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.insp-t{font-weight:700;font-size:16.5px}.insp-s{font-size:13px;color:var(--muted)}
+.ring{width:50px;height:50px;border-radius:50%;background:conic-gradient(var(--accent) calc(var(--p) * 1%), var(--surface2) 0);display:grid;place-items:center;position:relative;font-size:12px;font-weight:700;flex:none}
+.ring:before{content:"";position:absolute;inset:5px;border-radius:50%;background:var(--surface)}.ring span{position:relative}
+.insp .row>.btn{white-space:nowrap;font-size:14px}
+.inum.pend{background:var(--bad-soft);color:var(--bad)}
 .hidden{display:none!important}
 .ptitle{font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--accent-text);margin:0 0 12px}
 .tseg{grid-template-columns:repeat(auto-fit,minmax(90px,1fr))}
@@ -724,9 +731,9 @@ async function renderProject(){
     const thumb = ph ? `<img class="thumb" src="${phSrc(ph, true)}" alt="" onerror="this.outerHTML='<div class=&quot;thumb empty&quot;>Refazer</div>'">` : `<div class="thumb empty">${I.cam}</div>`;
     const n = (it.photoIds || []).length;
     return `<button class="card item" data-act="open-item" data-id="${it.id}">${thumb}
-      <div class="body"><div class="date"><span class="inum">Item ${num}</span>${ph ? esc(fmtDate(ph.takenAt)) : 'Sem foto'}${n > 1 ? `  (${n} fotos)` : ''}</div>
+      <div class="body"><div class="date"><span class="inum ${it.kind === 'pend' ? 'pend' : ''}">${it.kind === 'pend' ? 'Pendência' : 'Item ' + num}</span>${ph ? esc(fmtDate(ph.takenAt)) : 'Sem foto'}${n > 1 ? `  (${n} fotos)` : ''}</div>
       <div class="title">${esc(it.title || 'Item ' + num)}</div>
-      <div class="desc"><span class="dot ${s}"></span>${esc(itemSummary(p, it) || it.desc || 'Sem descrição')}</div></div></button>`;
+      <div class="desc"><span class="dot ${s}"></span>${esc(itemSummary(p, it) || it.desc || (n ? 'Foto registrada' : 'Aguardando foto'))}</div></div></button>`;
   }).join('');
   app.innerHTML = `
   <header class="top"><button class="icon-btn" data-act="folder" data-id="${pid0(p) || ''}" aria-label="Voltar">${I.back}</button>
@@ -1296,9 +1303,12 @@ function guideBar(p, items){
   if (!tplOf(p).guided) return '';
   const st = guideSteps(items), done = st.filter(s => stepDone(items.find(i => i.step === s.key))).length;
   const fill = items.filter(i => i.kind === 'step' && (i.photoIds || []).length && !(i.fields && i.fields.v) && (stepDef(i.step)?.fields || []).some(f => f.k === 'v')).length;
-  return `<div class="row" style="margin-bottom:12px"><button class="btn primary" data-act="guide">${I.cam}${done ? 'Continuar inspeção' : 'Iniciar inspeção'} (${done}/${st.length})</button>
-    <button class="btn ghost" data-act="fill" ${fill ? '' : 'disabled'}>${I.edit}Preencher medições (${fill})</button></div>
-    <button class="btn ghost block" data-act="pend-new" style="margin-bottom:12px">${I.flag}Registrar pendência</button>`;
+  const pct = Math.round(done / st.length * 100);
+  return `<div class="insp"><div class="insp-top"><div><div class="insp-t">Inspeção</div><div class="insp-s">${done} de ${st.length} passos concluídos</div></div>
+    <div class="ring" style="--p:${pct}"><span>${pct}%</span></div></div>
+    <button class="btn primary block" data-act="guide">${I.cam}${done ? 'Continuar inspeção' : 'Iniciar inspeção'}</button>
+    <div class="row" style="margin-top:8px"><button class="btn ghost" data-act="fill" ${fill ? '' : 'disabled'}>${I.edit}Medições${fill ? ` (${fill})` : ''}</button>
+    <button class="btn ghost" data-act="pend-new">${I.flag}Pendência</button></div></div>`;
 }
 function gfieldsHtml(s, fl, ref){
   return (s.fields || []).map(f => f.t === 'seg'

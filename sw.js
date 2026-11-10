@@ -1,5 +1,5 @@
 // Guarda o app no aparelho para abrir sem internet
-const CACHE = 'relatorio-campo-v3';
+const CACHE = 'relatorio-campo-v4';
 const FB = 'https://www.gstatic.com/firebasejs/10.12.2/';
 const LIBS = ['https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js',
   'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js',
