@@ -254,6 +254,10 @@ textarea.inp{min-height:120px;resize:vertical;line-height:1.5}
 .toast{position:fixed;left:50%;bottom:calc(100px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:30;
   background:var(--text);color:var(--bg);padding:11px 16px;border-radius:12px;font-size:14px;max-width:90vw;text-align:center}
 .hero .sync{margin-top:4px;font-size:12.5px;opacity:.95;font-weight:600}
+.gprog{height:6px;border-radius:3px;background:var(--surface2);overflow:hidden;margin:4px 0 14px}.gprog i{display:block;height:100%;background:var(--accent)}
+.gsec{font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--accent-text)}
+.gq{font-size:21px;font-weight:700;line-height:1.3;margin:6px 0 14px}
+.gph{display:flex;gap:8px;overflow-x:auto;margin-bottom:12px}.gph img{width:92px;height:92px;object-fit:cover;border-radius:12px;flex:none}
 .hidden{display:none!important}
 .ptitle{font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--accent-text);margin:0 0 12px}
 .tseg{grid-template-columns:repeat(auto-fit,minmax(90px,1fr))}
@@ -528,6 +532,8 @@ async function render(){
     else if (view.name === 'more') await renderMore();
     else if (view.name === 'project') await renderProject();
     else if (view.name === 'item') await renderItem();
+    else if (view.name === 'guide') await renderGuide();
+    else if (view.name === 'fill') await renderFill();
   } catch (e) {
     console.error(e);
     app.innerHTML = `<main><div class="empty-state"><p>O armazenamento do aparelho não respondeu. Feche e abra o app de novo.</p><p class="hint">${esc(e.message)}</p></div></main>`;
@@ -728,6 +734,7 @@ async function renderProject(){
     <button class="icon-btn" data-act="project-menu" data-id="${p.id}" aria-label="Mais opções">${I.more}</button></header>
   <main>
     <div class="path"><button data-act="tab" data-tab="folder">${esc((await getCompany()).name.split(' ')[0] || 'Início')}</button>${path.map(x => `${I.right}<button data-act="folder" data-id="${x.id}">${esc(x.name)}</button>`).join('')}</div>
+    ${guideBar(p, items)}
     <div class="stats">
       <button class="stat" data-act="filter" data-f="all"><b>${items.length}</b><span>Itens</span></button>
       <button class="stat" data-act="filter" data-f="nophoto"><b>${noPhoto.length}</b><span>Sem foto</span></button>
@@ -818,6 +825,7 @@ async function saveFields(){
 
 /* ---------- modelos de formulário ---------- */
 const TEMPLATES = {
+  hvac: {name:'HVAC', desc:'Inspeção guiada por fotos: plaqueta, vazão, filtro, ambiente e elétrica', status:false, guided:true, noteHint:'Ex.: medição no ponto 2', fields:[]},
   ensaio: {name:'Ensaio / Teste', desc:'Fotos numeradas com observação e resultado', status:true, noteHint:'Ex.: Teste Fase R x S', fields:[]},
   pendencia: {name:'Pendências', desc:'Local, responsável, prazo, prioridade e situação', status:false, noteHint:'Ex.: Antes / Depois', fields:[
     {k:'local', l:'Local', t:'text', ph:'Ex.: 2º pavimento, sala 204'},
@@ -862,6 +870,11 @@ function fieldsHtml(tpl, it){
 function itemSummary(p, it){
   const tpl = tplOf(p), fl = it.fields || {};
   if (p?.template === 'pendencia') return [fl.sit || 'Aberta', fl.prio, fl.local, fl.resp].filter(Boolean).join(' · ');
+  if (p?.template === 'hvac') {
+    if (it.kind === 'pend') return [fl.prio, fl.local].filter(Boolean).join(' · ');
+    const s = stepDef(it.step); const v = [fl.tipo].concat((s?.fields || []).filter(f => f.u && fl[f.k]).map(f => (f.k === 'proj' ? 'projeto ' : '') + fl[f.k] + ' ' + f.u)).filter(Boolean).join(' · ');
+    return v || ((it.photoIds || []).length && (s?.fields || []).length ? 'Valor: ver foto' : '');
+  }
   if (p?.template === 'arcond') return [fl.tag, fl.cap, fieldValue(tpl.fields.find(f => f.k === 'dt'), fl) ? 'ΔT ' + fieldValue(tpl.fields.find(f => f.k === 'dt'), fl) + ' °C' : ''].filter(Boolean).join(' · ');
   return '';
 }
@@ -1242,6 +1255,129 @@ async function cloudBoot(){
     if (user) { cloud.on = true; cloud.email = user.email || cloud.email; startListeners(); pumpBlobs(); }
     else cloudOff();
     updateChip();
+  });
+}
+
+/* ---------- HVAC: inspeção guiada ---------- */
+const NUM = u => ({k:'v', l:'Valor medido', u});
+const HVAC_STEPS = [
+  {key:'plaqueta', sec:'Identificação', t:'Plaqueta', q:'Tire a foto da plaqueta do equipamento'},
+  {key:'vaz', rep:true, sec:'Vazão de ar', t:'Vazão · ponto', q:'Tire a foto do balômetro no ponto de medição',
+    fields:[{k:'tipo', t:'seg', opts:['Insuflamento', 'Retorno', 'Exaustão', 'Ar externo']}, {k:'proj', l:'Vazão de projeto', u:'m³/h'}, {k:'v', l:'Vazão medida', u:'m³/h'}]},
+  {key:'filtro', sec:'Filtro', t:'Filtro', q:'Tire a foto do manômetro (pressão diferencial do filtro)', fields:[{k:'v', l:'Pressão medida', u:'Pa'}, {k:'troca', l:'Pressão de troca', u:'Pa'}]},
+  {key:'amb', sec:'Ambiente', t:'Ambiente', q:'Tire a foto do termo-higrômetro', fields:[{k:'v', l:'Temperatura', u:'°C'}, {k:'ur', l:'Umidade', u:'%'}]},
+  {key:'v_rs', sec:'Elétrica', t:'Tensão R-S', q:'Tire a foto da tensão entre as fases R-S', fields:[NUM('V')]},
+  {key:'v_st', sec:'Elétrica', t:'Tensão S-T', q:'Tire a foto da tensão entre as fases S-T', fields:[NUM('V')]},
+  {key:'v_tr', sec:'Elétrica', t:'Tensão T-R', q:'Tire a foto da tensão entre as fases T-R', fields:[NUM('V')]},
+  {key:'i_r', sec:'Elétrica', t:'Corrente Fase R', q:'Tire a foto da corrente na Fase R', fields:[NUM('A')]},
+  {key:'i_s', sec:'Elétrica', t:'Corrente Fase S', q:'Tire a foto da corrente na Fase S', fields:[NUM('A')]},
+  {key:'i_t', sec:'Elétrica', t:'Corrente Fase T', q:'Tire a foto da corrente na Fase T', fields:[NUM('A')]}
+];
+const stepDef = key => HVAC_STEPS.find(s => key === s.key || (s.rep && (key || '').startsWith(s.key + '_')));
+function guideSteps(items){
+  const out = []; let o = 1;
+  for (const s of HVAC_STEPS) {
+    if (s.rep) { const n = Math.max(1, items.filter(i => (i.step || '').startsWith(s.key + '_')).length);
+      for (let j = 1; j <= n; j++) out.push({...s, key: s.key + '_' + j, t: s.t + ' ' + j, order: o + j / 100}); }
+    else out.push({...s, order: o});
+    o++;
+  }
+  return out;
+}
+const stepDone = it => !!(it && ((it.photoIds || []).length || (it.fields && it.fields.v)));
+async function ensureStepItem(pid, key){
+  const items = await byIdx('items', 'projectId', pid);
+  let it = items.find(x => x.step === key); if (it) return it;
+  const s = guideSteps(items.concat([{step: key}])).find(x => x.key === key) || {t: key, order: 500};
+  it = await createItem(pid, {title: s.t, desc: ''});
+  Object.assign(it, {step: key, kind:'step', order: s.order}); await put('items', it); return it;
+}
+function guideBar(p, items){
+  if (!tplOf(p).guided) return '';
+  const st = guideSteps(items), done = st.filter(s => stepDone(items.find(i => i.step === s.key))).length;
+  const fill = items.filter(i => i.kind === 'step' && (i.photoIds || []).length && !(i.fields && i.fields.v) && (stepDef(i.step)?.fields || []).some(f => f.k === 'v')).length;
+  return `<div class="row" style="margin-bottom:12px"><button class="btn primary" data-act="guide">${I.cam}${done ? 'Continuar inspeção' : 'Iniciar inspeção'} (${done}/${st.length})</button>
+    <button class="btn ghost" data-act="fill" ${fill ? '' : 'disabled'}>${I.edit}Preencher medições (${fill})</button></div>
+    <button class="btn ghost block" data-act="pend-new" style="margin-bottom:12px">${I.flag}Registrar pendência</button>`;
+}
+function gfieldsHtml(s, fl, ref){
+  return (s.fields || []).map(f => f.t === 'seg'
+    ? `<div class="field"><span class="lb">Tipo</span><div class="seg tseg">${f.opts.map(o => `<button data-act="gseg" ${ref} data-k="${f.k}" data-v="${o}" aria-pressed="${fl[f.k] === o}">${o}</button>`).join('')}</div></div>`
+    : `<div class="field"><label class="lb">${esc(f.l)} (${f.u}) <span style="font-weight:400;color:var(--muted)">opcional</span></label><input class="inp gf" ${ref} data-k="${f.k}" inputmode="decimal" value="${esc(fl[f.k] || '')}" placeholder="Pode preencher depois"></div>`).join('');
+}
+async function renderGuide(){
+  const p = await get('projects', view.id); if (!p) return go({name:'folder', id:null});
+  curFolderId = pid0(p);
+  const items = await byIdx('items', 'projectId', p.id), st = guideSteps(items);
+  const i = Math.max(0, Math.min(st.length - 1, view.step || 0)), s = st[i];
+  const it = items.find(x => x.step === s.key), fl = (it && it.fields) || {};
+  const phs = it ? (await Promise.all((it.photoIds || []).map(id => get('photos', id)))).filter(Boolean) : [];
+  const done = st.filter(x => stepDone(items.find(y => y.step === x.key))).length;
+  const ref = `data-key="${s.key}"`;
+  app.innerHTML = `
+  <header class="top"><button class="icon-btn" data-act="open-project" data-id="${p.id}" aria-label="Voltar">${I.back}</button>
+    <h1>${esc(p.name)}<span class="sub">Passo ${i + 1} de ${st.length} · ${esc(s.sec)}</span></h1>
+    <button class="icon-btn" data-act="pend-new" aria-label="Registrar pendência">${I.flag}</button></header>
+  <main>
+    <div class="gprog"><i style="width:${Math.round(done / st.length * 100)}%"></i></div>
+    <div class="gsec">${esc(s.sec)}${stepDone(it) ? ' · <span style="color:var(--ok)">feito</span>' : ''}</div>
+    <div class="gq">${esc(s.q)}</div>
+    ${phs.length ? `<div class="gph">${phs.map(ph => `<img src="${phSrc(ph, true)}" alt="">`).join('')}</div>` : ''}
+    <div class="photo-actions"><button class="btn primary" data-act="cam-step" data-key="${s.key}" style="min-height:58px">${I.cam}${phs.length ? 'Mais uma foto' : 'Tirar foto'}</button>
+      <button class="btn ghost" data-act="gal-step" data-key="${s.key}">${I.img}Galeria</button></div>
+    ${s.fields ? `<div class="panel">${gfieldsHtml(s, fl, ref)}</div>` : ''}
+    ${s.rep ? `<button class="btn ghost block" data-act="add-vaz" style="margin-bottom:12px">${I.plus}Adicionar outro ponto de vazão</button>` : ''}
+    <button class="btn ghost block" data-act="pend-new">${I.flag}Encontrou uma pendência?</button>
+  </main>
+  <nav class="bottom"><div class="bottom-inner">
+    <div class="side"><button class="text-btn" data-act="gstep" data-d="-1" ${i ? '' : 'disabled'}>${I.left}Anterior</button></div>
+    <button class="fab" data-act="cam-step" data-key="${s.key}" aria-label="Tirar foto">${I.cam}</button>
+    <div class="side right">${i < st.length - 1 ? `<button class="text-btn" data-act="gstep" data-d="1">${stepDone(it) ? 'Próximo' : 'Pular'}${I.right}</button>`
+      : `<button class="text-btn" data-act="open-project" data-id="${p.id}">Concluir${I.right}</button>`}</div>
+  </div></nav>`;
+}
+async function renderFill(){
+  const p = await get('projects', view.id); if (!p) return go({name:'folder', id:null});
+  const skip = view.skip || [];
+  const items = (await byIdx('items', 'projectId', p.id)).sort(byOrder);
+  const todo = items.filter(i => i.kind === 'step' && (i.photoIds || []).length && !(i.fields && i.fields.v) && (stepDef(i.step)?.fields || []).some(f => f.k === 'v'));
+  const it = todo.find(i => !skip.includes(i.id));
+  if (!it) { toast(todo.length ? 'Os itens restantes foram pulados.' : 'Todas as medições estão preenchidas.'); return go({name:'project', id: p.id}); }
+  const s = stepDef(it.step), ph = await get('photos', it.photoIds[it.photoIds.length - 1]);
+  app.innerHTML = `
+  <header class="top"><button class="icon-btn" data-act="open-project" data-id="${p.id}" aria-label="Voltar">${I.back}</button>
+    <h1>Preencher medições<span class="sub">${todo.length} ${todo.length === 1 ? 'restante' : 'restantes'} · ${esc(p.name)}</span></h1><span style="width:44px"></span></header>
+  <main>
+    <div class="gq" style="margin-top:4px">${esc(it.title)}</div>
+    ${ph ? `<figure class="photo" style="margin-bottom:12px"><img src="${phSrc(ph)}" alt=""></figure>` : ''}
+    <div class="panel">${gfieldsHtml(s, it.fields || {}, `data-id="${it.id}"`)}</div>
+    <div class="row"><button class="btn ghost" data-act="fill-skip" data-id="${it.id}">Pular</button><button class="btn primary" data-act="fill-next">Salvar e próximo</button></div>
+  </main>`;
+  setTimeout(() => { const x = document.querySelector('.gf[data-k="v"]'); if (x) x.focus(); }, 80);
+}
+const gfT = {};
+async function saveGuideField(el){
+  const k = el.dataset.k, v = el.value;
+  const it = el.dataset.id ? await get('items', el.dataset.id) : await ensureStepItem(view.id, el.dataset.key);
+  if (!it) return; it.fields = {...(it.fields || {}), [k]: v}; it.updatedAt = Date.now(); await put('items', it);
+}
+function queueGuideField(el){ const id = (el.dataset.id || el.dataset.key) + el.dataset.k; clearTimeout(gfT[id]); gfT[id] = setTimeout(() => saveGuideField(el), 400); }
+async function flushGuideFields(){ for (const el of document.querySelectorAll('.gf')) { const id = (el.dataset.id || el.dataset.key) + el.dataset.k; if (gfT[id]) { clearTimeout(gfT[id]); delete gfT[id]; await saveGuideField(el); } } }
+function pendSheet(pid){
+  let prio = 'Normal';
+  const s = openSheet(`<h2>Nova pendência</h2>
+    <div class="field"><label class="lb" for="pd-desc">O que foi encontrado</label><textarea class="inp" id="pd-desc" placeholder="Ex.: dreno obstruído, água no forro"></textarea></div>
+    <div class="field"><label class="lb" for="pd-loc">Local <span style="font-weight:400;color:var(--muted)">opcional</span></label><input class="inp" id="pd-loc" placeholder="Ex.: sala 412"></div>
+    <div class="field"><span class="lb">Prioridade</span><div class="seg tseg">${['Urgente', 'Alta', 'Normal'].map(o => `<button data-pr="${o}" aria-pressed="${o === prio}">${o}</button>`).join('')}</div></div>
+    <button class="btn primary block" data-c="ok">${I.cam}Salvar e tirar as fotos</button>`);
+  s.addEventListener('click', async ev => {
+    const pb = ev.target.closest('[data-pr]');
+    if (pb) { prio = pb.dataset.pr; s.querySelectorAll('[data-pr]').forEach(x => x.setAttribute('aria-pressed', x === pb)); return; }
+    if (!ev.target.closest('[data-c="ok"]')) return;
+    const desc = $('#pd-desc', s).value.trim(); if (!desc) { $('#pd-desc', s).focus(); return; }
+    const it = await createItem(pid, {title: 'Pendência: ' + desc.slice(0, 60), desc});
+    Object.assign(it, {kind:'pend', status:'anomalia', order: 1000 + Date.now() / 1e13, fields: {prio, local: $('#pd-loc', s).value.trim()}});
+    await put('items', it); closeSheet(); go({name:'item', id: it.id});
   });
 }
 
@@ -1629,6 +1765,10 @@ document.addEventListener('click', async e => {
     if (view.name === 'item') saveFields();
     return;
   }
+  if (act === 'cam-step' || act === 'gal-step') {
+    camTarget = 'step:' + b.dataset.key;
+    const inp = $(act === 'gal-step' ? '#in-gal' : '#in-cam'); inp.value = ''; inp.click(); flushGuideFields(); return;
+  }
   if (act === 'import') {
     if (view.name === 'item') saveFields();
     startImport(view.name === 'project' ? view.id : null, curFolderId);
@@ -1701,6 +1841,18 @@ document.addEventListener('click', async e => {
     case 'cam-add': camTarget = view.id; $('#in-cam').value = ''; $('#in-cam').click(); break;
     case 'gal-add': camTarget = view.id; $('#in-gal').value = ''; $('#in-gal').click(); break;
     case 'sketch': openSketch(id); break;
+    case 'guide': { const its = await byIdx('items', 'projectId', view.id), st = guideSteps(its); const f = st.findIndex(s => !stepDone(its.find(i => i.step === s.key)));
+      go({name:'guide', id: view.id, step: f < 0 ? 0 : f}); break; }
+    case 'gstep': await flushGuideFields(); view.step = (view.step || 0) + +b.dataset.d; render().then(() => window.scrollTo(0, 0)); break;
+    case 'gseg': { const k = b.dataset.k, v = b.dataset.v; const it = b.dataset.id ? await get('items', b.dataset.id) : await ensureStepItem(view.id, b.dataset.key);
+      it.fields = {...(it.fields || {}), [k]: it.fields?.[k] === v ? '' : v}; await put('items', it); render(); break; }
+    case 'add-vaz': { await flushGuideFields(); const its = await byIdx('items', 'projectId', view.id);
+      const n = Math.max(1, its.filter(i => (i.step || '').startsWith('vaz_')).length) + 1; await ensureStepItem(view.id, 'vaz_' + n);
+      const st = guideSteps(await byIdx('items', 'projectId', view.id)); view.step = st.findIndex(s => s.key === 'vaz_' + n); render(); break; }
+    case 'pend-new': await flushGuideFields(); pendSheet(view.name === 'item' ? (await get('items', view.id)).projectId : view.id); break;
+    case 'fill': go({name:'fill', id: view.id}); break;
+    case 'fill-next': await flushGuideFields(); render(); break;
+    case 'fill-skip': view.skip = [...(view.skip || []), id]; render(); break;
     case 'tfield': { const it = await get('items', view.id); it.fields = {...(it.fields || {})}; const k = b.dataset.k, v = b.dataset.v;
       it.fields[k] = it.fields[k] === v ? '' : v; it.updatedAt = Date.now(); await put('items', it); render(); break; }
     case 'status': { const it = await get('items', view.id); const v = b.dataset.v; it.status = it.status === v ? null : v; it.updatedAt = Date.now(); await put('items', it); render(); break; }
@@ -1723,12 +1875,14 @@ document.addEventListener('input', e => {
   if (e.target.id === 'f-title') { const c = $('#f-count'); if (c) c.textContent = `${e.target.value.length}/100`; queueSave(); }
   if (e.target.id === 'f-desc') { const c = $('#d-count'); if (c) c.textContent = `${e.target.value.length}/1000`; queueSave(); }
   if (e.target.classList.contains('pnote')) queuePhotoNote(e.target.dataset.ph, e.target.value);
+  if (e.target.classList.contains('gf')) queueGuideField(e.target);
   if (e.target.classList.contains('tf')) { queueSave(); if (e.target.dataset.fk === 'tr' || e.target.dataset.fk === 'ti') { const c = $('#calc-dt'); if (c) c.textContent = fieldValue({t:'calc'}, {tr: $('#tf-tr')?.value, ti: $('#tf-ti')?.value}) || '—'; } }
 });
 async function onPhotos(files){
   if (!files.length) return;
   toast('Salvando foto…', 30000);
   try {
+    if (typeof camTarget === 'string' && camTarget.startsWith('step:')) { const it = await ensureStepItem(view.id, camTarget.slice(5)); await addPhotos(it.id, files); hideToast(); await render(); return; }
     if (camTarget === 'new') { const it = await createItem(view.id); await addPhotos(it.id, files); hideToast(); go({name:'item', id: it.id}); }
     else if (camTarget) { await addPhotos(camTarget, files); hideToast(); await render(); const strip = $('.photos'); if (strip) strip.scrollLeft = strip.scrollWidth; }
   } catch (err) { toast('Não foi possível salvar a foto: ' + err.message); }
