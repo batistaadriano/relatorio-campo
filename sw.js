@@ -1,5 +1,5 @@
 // Guarda o app no aparelho para abrir sem internet
-const CACHE = 'relatorio-campo-v4';
+const CACHE = 'relatorio-campo-v5';
 const FB = 'https://www.gstatic.com/firebasejs/10.12.2/';
 const LIBS = ['https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js',
   'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js',
@@ -16,6 +16,7 @@ self.addEventListener('fetch', e => {
   const url = new URL(e.request.url);
   const same = url.origin === location.origin;
   if (!same && !LIBS.includes(e.request.url) && !e.request.url.startsWith(FB)) return;
+  if (same && url.pathname.endsWith('version.json')) return;
   if (e.request.mode === 'navigate') {
     e.respondWith(fetch(e.request).then(r => { const cp = r.clone(); caches.open(CACHE).then(c => c.put('./index.html', cp)); return r; })
       .catch(() => caches.match('./index.html')));

@@ -371,6 +371,7 @@ async function os(name, mode = 'readonly'){ const d = await idb(); return d.tran
 const getAll = async n => P((await os(n)).getAll());
 const byIdx = async (n, idx, v) => P((await os(n)).index(idx).getAll(v));
 const get = async (n, k) => P((await os(n)).get(k));
+const APP_VERSION = 7, APP_DATE = '10/11/2026';
 const SYNCED = ['folders', 'projects', 'items', 'photos'];
 const rawPut = async (n, v) => P((await os(n, 'readwrite')).put(v));
 const put = async (n, v) => { if (SYNCED.includes(n) && v) v.mt = Date.now(); const r = await rawPut(n, v); cloudPush(n, [v]); return r; };
@@ -699,6 +700,8 @@ async function renderMore(){
     <div class="ltitle"><div><h1>Mais</h1><p>Configurações e cópias de segurança</p></div></div>
     <div class="group">${row('company', I.case, 'Dados da empresa', esc(company.name || 'Logo, contato e endereço do relatório'), 'blue')}
       ${row('template', I.sheet, 'Baixar planilha modelo', 'Exemplo de colunas para importar')}</div>
+    <div class="sec"><h2>Aplicativo</h2></div>
+    <div class="group">${row('version', I.save, 'Versão ' + APP_VERSION, 'Atualizada em ' + APP_DATE + ' · toque para verificar', 'blue')}</div>
     <div class="sec"><h2>Equipe na nuvem</h2></div>
     <div class="group">${cloud.on || cloud.orgId ? row('team', I.case, 'Equipe ' + esc(cloud.orgName || ''), esc(cloud.email || '') + ' · ' + esc(ROLE_LABEL[cloud.role] || ''), 'blue') + row('cloud-logout', I.upload, 'Sair da conta', 'Os relatórios continuam neste celular')
       : row('cloud-login', I.upload, 'Entrar ou criar conta', 'Sincronize os relatórios com a equipe', 'blue')}</div>
@@ -1391,6 +1394,19 @@ function pendSheet(pid){
   });
 }
 
+async function checkUpdate(manual){
+  if (!navigator.onLine) { if (manual) toast('Sem internet para verificar. Versão atual: ' + APP_VERSION + '.'); return; }
+  try {
+    const r = await (await fetch('version.json?x=' + Date.now(), {cache:'no-store'})).json();
+    if (r.version > APP_VERSION) {
+      if (manual) confirmSheet('Nova versão disponível', `Versão ${r.version} de ${r.date}. ${r.notes || ''}`, 'Atualizar agora', async () => {
+        try { const reg = await navigator.serviceWorker?.getRegistration(); await reg?.update(); } catch (e) {}
+        location.reload();
+      });
+      else toast(`Nova versão ${r.version} disponível. Toque em Mais → Versão para atualizar.`, 5000);
+    } else if (manual) toast(`Você já está na versão mais recente (${APP_VERSION}).`);
+  } catch (e) { if (manual) toast('Não foi possível verificar agora.'); }
+}
 /* ---------- empresa ---------- */
 async function companySheet(){
   const c = await getCompany();
@@ -1850,6 +1866,7 @@ document.addEventListener('click', async e => {
     case 'cam-new': camTarget = 'new'; $('#in-cam').value = ''; $('#in-cam').click(); break;
     case 'cam-add': camTarget = view.id; $('#in-cam').value = ''; $('#in-cam').click(); break;
     case 'gal-add': camTarget = view.id; $('#in-gal').value = ''; $('#in-gal').click(); break;
+    case 'version': checkUpdate(true); break;
     case 'sketch': openSketch(id); break;
     case 'guide': { const its = await byIdx('items', 'projectId', view.id), st = guideSteps(its); const f = st.findIndex(s => !stepDone(its.find(i => i.step === s.key)));
       go({name:'guide', id: view.id, step: f < 0 ? 0 : f}); break; }
@@ -1919,6 +1936,7 @@ document.addEventListener('visibilitychange', () => { if (document.hidden) saveF
   await render();
   updateChip();
   cloudBoot().catch(e => console.warn('nuvem', e));
+  setTimeout(() => checkUpdate(false), 3000);
 })();
 })();
 </script>
