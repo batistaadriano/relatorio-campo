@@ -202,7 +202,7 @@ main{padding:12px 16px 120px;max-width:760px;margin:0 auto}
 .photos{display:flex;gap:10px;overflow-x:auto;scroll-snap-type:x mandatory;margin:0 -16px 12px;padding:0 16px}
 .photo{position:relative;flex:0 0 100%;scroll-snap-align:center;border-radius:16px;overflow:hidden;background:var(--surface2);margin:0}
 .photos.multi .photo{flex-basis:88%}
-.photo img{width:100%;height:auto;max-height:58vh;object-fit:contain;background:#000}
+.photo img{width:100%;height:auto;max-height:34vh;object-fit:contain;background:#000}
 .photo .del{position:absolute;top:10px;right:10px;width:40px;height:40px;border-radius:12px;background:rgba(0,0,0,.55);color:#fff;display:grid;place-items:center}
 .photo .del svg{width:20px;height:20px}
 .photo .n{position:absolute;left:10px;top:10px;background:rgba(0,0,0,.55);color:#fff;font-size:12px;padding:3px 9px;border-radius:8px}
@@ -269,6 +269,10 @@ textarea.inp{min-height:120px;resize:vertical;line-height:1.5}
 .wmpg{width:110px;height:155px;flex:none;background:#fff;border:1px solid var(--line);border-radius:6px;position:relative;overflow:hidden}
 .wmpg img{position:absolute;transform:translate(-50%,-50%);max-width:none}
 .wmbox input[type=range]{width:100%;accent-color:var(--accent);margin:2px 0 8px}
+.savechip{font-size:12px;font-weight:600;color:var(--ok);margin:2px 0 8px}.savechip.saving{color:var(--muted)}.savechip.err{color:var(--bad)}
+.st-partial{color:var(--warn)}.st-filled{color:var(--ok)}.st-na,.st-none{color:var(--muted)}
+.zoom{position:fixed;inset:0;z-index:40;background:#000;display:grid;place-items:center}.zoom img{max-width:100%;max-height:100%}
+.zoom button{position:absolute;top:calc(12px + env(safe-area-inset-top,0px));right:12px;color:#fff;background:rgba(255,255,255,.18);padding:8px 14px;border-radius:10px;font-weight:600}
 .hidden{display:none!important}
 .ptitle{font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--accent-text);margin:0 0 12px}
 .tseg{grid-template-columns:repeat(auto-fit,minmax(90px,1fr))}
@@ -377,10 +381,10 @@ async function os(name, mode = 'readonly'){ const d = await idb(); return d.tran
 const getAll = async n => P((await os(n)).getAll());
 const byIdx = async (n, idx, v) => P((await os(n)).index(idx).getAll(v));
 const get = async (n, k) => P((await os(n)).get(k));
-const APP_VERSION = 8, APP_DATE = '11/11/2026';
+const APP_VERSION = 9, APP_DATE = '11/11/2026';
 const SYNCED = ['folders', 'projects', 'items', 'photos'];
 const rawPut = async (n, v) => P((await os(n, 'readwrite')).put(v));
-const put = async (n, v) => { if (SYNCED.includes(n) && v) v.mt = Date.now(); const r = await rawPut(n, v); cloudPush(n, [v]); return r; };
+const put = async (n, v) => { if (SYNCED.includes(n) && v) v.mt = Date.now(); let r; try { r = await rawPut(n, v); } catch (e) { setSaveState('err'); throw e; } cloudPush(n, [v]); if (n !== 'settings') setSaveState('ok'); return r; };
 async function putMany(n, arr){ if (SYNCED.includes(n)) arr.forEach(v => { v.mt = v.mt || Date.now(); }); await rawPutMany(n, arr); cloudPush(n, arr); }
 async function rawPutMany(n, arr){
   const d = await idb();
@@ -456,7 +460,8 @@ async function addPhotos(itemId, files){
     await put('photos', ph);
     it.photoIds = [...(it.photoIds || []), ph.id];
   }
-  it.updatedAt = Date.now(); await put('items', it); await touchProject(it.projectId);
+  const cur = (await get('items', itemId)) || it; const added = it.photoIds.filter(x => !(cur.photoIds || []).includes(x));
+  cur.photoIds = [...(cur.photoIds || []), ...added]; cur.updatedAt = Date.now(); await put('items', cur); await touchProject(it.projectId);
 }
 async function createProject(name, parentId){
   const p = {id: uid(), name, parentId: parentId || null, defaultDesc:'', docNumber: await nextDocNumber(), createdAt: Date.now(), updatedAt: Date.now()};
@@ -548,6 +553,7 @@ async function render(){
     else if (view.name === 'item') await renderItem();
     else if (view.name === 'guide') await renderGuide();
     else if (view.name === 'fill') await renderFill();
+    setSaveState();
   } catch (e) {
     console.error(e);
     app.innerHTML = `<main><div class="empty-state"><p>O armazenamento do aparelho não respondeu. Feche e abra o app de novo.</p><p class="hint">${esc(e.message)}</p></div></main>`;
@@ -707,7 +713,8 @@ async function renderMore(){
     <div class="group">${row('company', I.case, 'Dados da empresa', esc(company.name || 'Logo, contato e endereço do relatório'), 'blue')}
       ${row('template', I.sheet, 'Baixar planilha modelo', 'Exemplo de colunas para importar')}</div>
     <div class="sec"><h2>Aplicativo</h2></div>
-    <div class="group">${row('version', I.save, 'Versão ' + APP_VERSION, 'Atualizada em ' + APP_DATE + ' · toque para verificar', 'blue')}</div>
+    <div class="group">${row('version', I.save, 'Versão ' + APP_VERSION, 'Atualizada em ' + APP_DATE + ' · toque para verificar', 'blue')}
+      ${row('save-phone', I.img, 'Salvar fotos também no celular', (await getSetting('savePhone')) ? 'Ligado: oferece salvar após cada foto' : 'Desligado')}</div>
     <div class="sec"><h2>Equipe na nuvem</h2></div>
     <div class="group">${cloud.on || cloud.orgId ? row('team', I.case, 'Equipe ' + esc(cloud.orgName || ''), esc(cloud.email || '') + ' · ' + esc(ROLE_LABEL[cloud.role] || ''), 'blue') + row('cloud-logout', I.upload, 'Sair da conta', 'Os relatórios continuam neste celular')
       : row('cloud-login', I.upload, 'Entrar ou criar conta', 'Sincronize os relatórios com a equipe', 'blue')}</div>
@@ -784,16 +791,16 @@ async function renderItem(){
   const s = statusOf(it);
   const photoHtml = photos.length
     ? `<div class="photos ${photos.length > 1 ? 'multi' : ''}">${photos.map((ph, i) => `<figure class="photo">
-        <img src="${phSrc(ph)}" alt="Foto ${i + 1}" onerror="this.outerHTML='<div class=&quot;add-photo&quot; style=&quot;margin:0&quot;>Esta foto não pôde ser lida. Exclua no ícone da lixeira e tire de novo.</div>'">
+        <img src="${phSrc(ph)}" alt="Foto ${i + 1}" data-act="zoom" data-id="${ph.id}" onerror="this.outerHTML='<div class=&quot;add-photo&quot; style=&quot;margin:0&quot;>Esta foto não pôde ser lida. Exclua no ícone da lixeira e tire de novo.</div>'">
         <button class="del" data-act="del-photo" data-id="${ph.id}" aria-label="Excluir foto">${I.trash}</button>
         <button class="sketch" data-act="sketch" data-id="${ph.id}">${I.edit}Riscar</button>
-        <span class="n"><b>${i === 0 ? 'Item ' + (idx + 1) : 'Foto ' + (idx + 1) + '.' + i}</b>${esc(fmtDate(ph.takenAt))}</span>
+        <span class="n"><b>${i === 0 ? 'Item ' + (idx + 1) : 'Foto ' + (idx + 1) + '.' + i}</b>Foto ${i + 1} de ${photos.length} · ${esc(fmtDate(ph.takenAt))}</span>
         <div class="cap"><label for="pn-${ph.id}">Observação da foto ${i === 0 ? (idx + 1) : (idx + 1) + '.' + i}</label>
         <input class="inp pnote" id="pn-${ph.id}" data-ph="${ph.id}" maxlength="150" value="${esc(ph.note || '')}" placeholder="${esc(tplOf(p).noteHint)}"></div></figure>`).join('')}</div>`
     : `<div class="add-photo">${I.cam}Nenhuma foto neste item</div>`;
   app.innerHTML = `
   <header class="top"><button class="icon-btn" data-act="open-project" data-id="${it.projectId}" aria-label="Voltar">${I.back}</button>
-    <h1>Item ${idx + 1} de ${sib.length}<span class="sub">${esc(it.title || p?.name || '')}</span></h1>
+    <h1>${esc(p?.name || '')} · ${esc(it.title || 'Item ' + (idx + 1))}<span class="sub">Item ${idx + 1} de ${sib.length}</span></h1>
     <button class="icon-btn" data-act="item-menu" aria-label="Mais opções">${I.more}</button></header>
   <main>
     ${photoHtml}
@@ -825,7 +832,7 @@ async function savePhotoNote(id, v){ clearTimeout(noteT[id]); const ph = await g
 function queuePhotoNote(id, v){ clearTimeout(noteT[id]); noteT[id] = setTimeout(() => savePhotoNote(id, v), 350); }
 document.addEventListener('change', e => { if (e.target.classList && e.target.classList.contains('pnote')) savePhotoNote(e.target.dataset.ph, e.target.value); });
 let saveT;
-function queueSave(){ clearTimeout(saveT); saveT = setTimeout(saveFields, 400); }
+function queueSave(){ setSaveState('saving'); clearTimeout(saveT); saveT = setTimeout(saveFields, 400); }
 async function saveFields(){
   clearTimeout(saveT);
   if (view.name !== 'item') return;
@@ -841,7 +848,11 @@ async function saveFields(){
 
 /* ---------- modelos de formulário ---------- */
 const TEMPLATES = {
-  hvac: {name:'HVAC', desc:'Inspeção guiada por fotos: plaqueta, vazão, filtro, ambiente e elétrica', status:false, guided:true, noteHint:'Ex.: medição no ponto 2', fields:[]},
+  hvac: {name:'HVAC · Fan coil', desc:'Plaqueta, vazão de ar, filtro, ambiente e elétrica', status:false, guided:true, noteHint:'Ex.: medição no ponto 2', fields:[]},
+  split: {name:'HVAC · Split', desc:'Plaquetas, filtro, ambiente e elétrica', status:false, guided:true, noteHint:'Ex.: evaporadora', fields:[]},
+  exaustor: {name:'HVAC · Exaustor', desc:'Plaqueta, vazão de exaustão e elétrica', status:false, guided:true, noteHint:'Ex.: grelha 2', fields:[]},
+  tabar: {name:'TAB de ar', desc:'Vazões por ponto (difusores, grelhas) e ambiente', status:false, guided:true, noteHint:'Ex.: difusor D-01', fields:[]},
+  tabhid: {name:'TAB hidrônico', desc:'Vazão de água, pressão diferencial e temperaturas por válvula', status:false, guided:true, noteHint:'Ex.: print do medidor', fields:[]},
   ensaio: {name:'Ensaio / Teste', desc:'Fotos numeradas com observação e resultado', status:true, noteHint:'Ex.: Teste Fase R x S', fields:[]},
   pendencia: {name:'Pendências', desc:'Local, responsável, prazo, prioridade e situação', status:false, noteHint:'Ex.: Antes / Depois', fields:[
     {k:'local', l:'Local', t:'text', ph:'Ex.: 2º pavimento, sala 204'},
@@ -886,9 +897,10 @@ function fieldsHtml(tpl, it){
 function itemSummary(p, it){
   const tpl = tplOf(p), fl = it.fields || {};
   if (p?.template === 'pendencia') return [fl.sit || 'Aberta', fl.prio, fl.local, fl.resp].filter(Boolean).join(' · ');
-  if (p?.template === 'hvac') {
+  if (tplOf(p).guided) {
     if (it.kind === 'pend') return [fl.prio, fl.local].filter(Boolean).join(' · ');
-    const s = stepDef(it.step); const v = [fl.tipo].concat((s?.fields || []).filter(f => f.u && fl[f.k]).map(f => (f.k === 'proj' ? 'projeto ' : '') + fl[f.k] + ' ' + f.u)).filter(Boolean).join(' · ');
+    if (it.na) return 'Não se aplica' + (it.naWhy ? ': ' + it.naWhy : '');
+    const s = stepDef(it.step); const v = [fl.ponto, fl.tipo].concat((s?.fields || []).filter(f => f.u && fl[f.k]).map(f => (f.k === 'proj' ? 'projeto ' : '') + fl[f.k] + ' ' + f.u)).filter(Boolean).join(' · ');
     return v || ((it.photoIds || []).length && (s?.fields || []).length ? 'Valor: ver foto' : '');
   }
   if (p?.template === 'arcond') return [fl.tag, fl.cap, fieldValue(tpl.fields.find(f => f.k === 'dt'), fl) ? 'ΔT ' + fieldValue(tpl.fields.find(f => f.k === 'dt'), fl) + ' °C' : ''].filter(Boolean).join(' · ');
@@ -1012,7 +1024,7 @@ function syncText(){
   if (pending || blobQueue.size) return 'Sincronizando…';
   return 'Sincronizado com a equipe';
 }
-function updateChip(){ document.querySelectorAll('[data-sync]').forEach(el => { const t = syncText(); el.textContent = t; el.classList.toggle('hidden', !t); }); }
+function updateChip(){ document.querySelectorAll('[data-sync]').forEach(el => { const t = syncText(); el.textContent = t; el.classList.toggle('hidden', !t); }); setSaveState(); }
 window.addEventListener('online', () => { updateChip(); pumpBlobs(); });
 window.addEventListener('offline', updateChip);
 
@@ -1275,24 +1287,33 @@ async function cloudBoot(){
 }
 
 /* ---------- HVAC: inspeção guiada ---------- */
-const NUM = u => ({k:'v', l:'Valor medido', u});
+const NUM = u => ({k:'v', l:'Valor medido', u, req:true});
 const HVAC_STEPS = [
-  {key:'plaqueta', sec:'Identificação', t:'Plaqueta', q:'Tire a foto da plaqueta do equipamento'},
-  {key:'vaz', rep:true, sec:'Vazão de ar', t:'Vazão · ponto', q:'Tire a foto do balômetro no ponto de medição',
-    fields:[{k:'tipo', t:'seg', opts:['Insuflamento', 'Retorno', 'Exaustão', 'Ar externo']}, {k:'proj', l:'Vazão de projeto', u:'m³/h'}, {k:'v', l:'Vazão medida', u:'m³/h'}]},
-  {key:'filtro', sec:'Filtro', t:'Filtro', q:'Tire a foto do manômetro (pressão diferencial do filtro)', fields:[{k:'v', l:'Pressão medida', u:'Pa'}, {k:'troca', l:'Pressão de troca', u:'Pa'}]},
-  {key:'amb', sec:'Ambiente', t:'Ambiente', q:'Tire a foto do termo-higrômetro', fields:[{k:'v', l:'Temperatura', u:'°C'}, {k:'ur', l:'Umidade', u:'%'}]},
-  {key:'v_rs', sec:'Elétrica', t:'Tensão R-S', q:'Tire a foto da tensão entre as fases R-S', fields:[NUM('V')]},
-  {key:'v_st', sec:'Elétrica', t:'Tensão S-T', q:'Tire a foto da tensão entre as fases S-T', fields:[NUM('V')]},
-  {key:'v_tr', sec:'Elétrica', t:'Tensão T-R', q:'Tire a foto da tensão entre as fases T-R', fields:[NUM('V')]},
-  {key:'i_r', sec:'Elétrica', t:'Corrente Fase R', q:'Tire a foto da corrente na Fase R', fields:[NUM('A')]},
-  {key:'i_s', sec:'Elétrica', t:'Corrente Fase S', q:'Tire a foto da corrente na Fase S', fields:[NUM('A')]},
-  {key:'i_t', sec:'Elétrica', t:'Corrente Fase T', q:'Tire a foto da corrente na Fase T', fields:[NUM('A')]}
+  {key:'plaqueta', sec:'Identificação', t:'Plaqueta', q:'Adicione a foto da plaqueta do equipamento'},
+  {key:'plaqueta_cond', sec:'Identificação', t:'Plaqueta da condensadora', q:'Adicione a foto da plaqueta da condensadora'},
+  {key:'vaz', rep:true, sec:'Vazão de ar', t:'Vazão · ponto', q:'Identifique o ponto, informe as vazões e adicione a foto da medição',
+    fields:[{k:'ponto', t:'text', l:'Qual ponto está sendo medido?', ph:'Ex.: Difusor D-01 / Sala 1203', req:true}, {k:'tipo', t:'seg', l:'Tipo', opts:['Insuflamento', 'Retorno', 'Exaustão', 'Ar externo'], req:true},
+      {k:'proj', l:'Vazão de projeto', u:'m³/h', req:true}, {k:'v', l:'Vazão medida', u:'m³/h', req:true}]},
+  {key:'filtro', sec:'Filtro', t:'Filtro', q:'Informe a pressão diferencial do filtro e adicione a foto do manômetro', fields:[{k:'v', l:'Pressão medida', u:'Pa', req:true}, {k:'troca', l:'Pressão de troca', u:'Pa'}]},
+  {key:'amb', sec:'Ambiente', t:'Ambiente', q:'Informe temperatura e umidade e adicione a foto do termo-higrômetro', fields:[{k:'v', l:'Temperatura', u:'°C', req:true}, {k:'ur', l:'Umidade', u:'%', req:true}]},
+  {key:'v_rs', sec:'Elétrica', t:'Tensão R-S', q:'Tensão entre as fases R-S: valor e foto', fields:[NUM('V')]},
+  {key:'v_st', sec:'Elétrica', t:'Tensão S-T', q:'Tensão entre as fases S-T: valor e foto', fields:[NUM('V')]},
+  {key:'v_tr', sec:'Elétrica', t:'Tensão T-R', q:'Tensão entre as fases T-R: valor e foto', fields:[NUM('V')]},
+  {key:'i_r', sec:'Elétrica', t:'Corrente Fase R', q:'Corrente na Fase R: valor e foto', fields:[NUM('A')]},
+  {key:'i_s', sec:'Elétrica', t:'Corrente Fase S', q:'Corrente na Fase S: valor e foto', fields:[NUM('A')]},
+  {key:'i_t', sec:'Elétrica', t:'Corrente Fase T', q:'Corrente na Fase T: valor e foto', fields:[NUM('A')]},
+  {key:'hid', rep:true, sec:'TAB hidrônico', t:'Ponto hidrônico', q:'Identifique a válvula ou circuito, informe as medições e adicione a foto ou o print da tela do medidor',
+    fields:[{k:'ponto', t:'text', l:'TAG da válvula / circuito', ph:'Ex.: VBC-03 · FCT-01-1P', req:true}, {k:'proj', l:'Vazão de projeto', u:'m³/h', req:true}, {k:'v', l:'Vazão medida', u:'m³/h', req:true},
+      {k:'dp', l:'Pressão diferencial', u:'kPa'}, {k:'te', l:'Temperatura de entrada', u:'°C'}, {k:'ts', l:'Temperatura de saída', u:'°C'}]}
 ];
+const ELET = ['v_rs', 'v_st', 'v_tr', 'i_r', 'i_s', 'i_t'];
+const ROTEIROS = {hvac: ['plaqueta', 'vaz', 'filtro', 'amb', ...ELET], split: ['plaqueta', 'plaqueta_cond', 'filtro', 'amb', ...ELET],
+  exaustor: ['plaqueta', 'vaz', ...ELET], tabar: ['vaz', 'amb'], tabhid: ['hid']};
 const stepDef = key => HVAC_STEPS.find(s => key === s.key || (s.rep && (key || '').startsWith(s.key + '_')));
-function guideSteps(items){
+function guideSteps(items, p){
   const out = []; let o = 1;
-  for (const s of HVAC_STEPS) {
+  for (const key of ROTEIROS[p?.template] || ROTEIROS.hvac) {
+    const s = HVAC_STEPS.find(x => x.key === key);
     if (s.rep) { const n = Math.max(1, items.filter(i => (i.step || '').startsWith(s.key + '_')).length);
       for (let j = 1; j <= n; j++) out.push({...s, key: s.key + '_' + j, t: s.t + ' ' + j, order: o + j / 100}); }
     else out.push({...s, order: o});
@@ -1300,79 +1321,99 @@ function guideSteps(items){
   }
   return out;
 }
-const stepDone = it => !!(it && ((it.photoIds || []).length || (it.fields && it.fields.v)));
+/* situação da etapa: none | partial | filled | na */
+function stepState(it){
+  if (!it) return 'none';
+  if (it.na) return 'na';
+  const s = stepDef(it.step), f = it.fields || {}, has = (it.photoIds || []).length > 0;
+  const req = (s?.fields || []).filter(x => x.req), okReq = req.every(x => String(f[x.k] || '').trim());
+  if (has && okReq) return 'filled';
+  return has || req.some(x => String(f[x.k] || '').trim()) ? 'partial' : 'none';
+}
+const stepDone = it => ['filled', 'na'].includes(stepState(it));
+const ST_LABEL = {none:'Não iniciado', partial:'Registro parcial', filled:'Preenchido', na:'Não se aplica'};
+const RES_LABEL = {ok:'Conforme', anomalia:'Não conforme', none:'Não avaliado'};
 async function ensureStepItem(pid, key){
   const items = await byIdx('items', 'projectId', pid);
   let it = items.find(x => x.step === key); if (it) return it;
-  const s = guideSteps(items.concat([{step: key}])).find(x => x.key === key) || {t: key, order: 500};
+  const p = await get('projects', pid);
+  const s = guideSteps(items.concat([{step: key}]), p).find(x => x.key === key) || {t: key, order: 500};
   it = await createItem(pid, {title: s.t, desc: ''});
   Object.assign(it, {step: key, kind:'step', order: s.order}); await put('items', it); return it;
 }
+const needsValue = i => i.kind === 'step' && !i.na && (i.photoIds || []).length && (stepDef(i.step)?.fields || []).some(f => f.req && f.u && !String(i.fields?.[f.k] || '').trim());
 function guideBar(p, items){
   if (!tplOf(p).guided) return '';
-  const st = guideSteps(items), done = st.filter(s => stepDone(items.find(i => i.step === s.key))).length;
-  const fill = items.filter(i => i.kind === 'step' && (i.photoIds || []).length && !(i.fields && i.fields.v) && (stepDef(i.step)?.fields || []).some(f => f.k === 'v')).length;
-  const pct = Math.round(done / st.length * 100);
-  return `<div class="insp"><div class="insp-top"><div><div class="insp-t">Inspeção</div><div class="insp-s">${done} de ${st.length} passos concluídos</div></div>
+  const st = guideSteps(items, p), states = st.map(s => stepState(items.find(i => i.step === s.key)));
+  const c = k => states.filter(x => x === k).length, done = c('filled') + c('na');
+  const fill = items.filter(needsValue).length, pct = Math.round(done / st.length * 100);
+  return `<div class="insp"><div class="insp-top"><div><div class="insp-t">Inspeção · ${esc(tplOf(p).name)}</div>
+    <div class="insp-s">${c('filled')} preenchidos${c('partial') ? ` · <b style="color:var(--warn)">${c('partial')} parciais</b>` : ''}${c('na') ? ` · ${c('na')} não se aplica` : ''} · ${c('none')} não iniciados</div></div>
     <div class="ring" style="--p:${pct}"><span>${pct}%</span></div></div>
-    <button class="btn primary block" data-act="guide">${I.cam}${done ? 'Continuar inspeção' : 'Iniciar inspeção'}</button>
+    <button class="btn primary block" data-act="guide">${I.cam}${done || c('partial') ? 'Continuar inspeção' : 'Iniciar inspeção'}</button>
     <div class="row" style="margin-top:8px"><button class="btn ghost" data-act="fill" ${fill ? '' : 'disabled'}>${I.edit}Medições${fill ? ` (${fill})` : ''}</button>
     <button class="btn ghost" data-act="pend-new">${I.flag}Pendência</button></div></div>`;
 }
 function gfieldsHtml(s, fl, ref){
-  return (s.fields || []).map(f => f.t === 'seg'
-    ? `<div class="field"><span class="lb">Tipo</span><div class="seg tseg">${f.opts.map(o => `<button data-act="gseg" ${ref} data-k="${f.k}" data-v="${o}" aria-pressed="${fl[f.k] === o}">${o}</button>`).join('')}</div></div>`
-    : `<div class="field"><label class="lb">${esc(f.l)} (${f.u}) <span style="font-weight:400;color:var(--muted)">opcional</span></label><input class="inp gf" ${ref} data-k="${f.k}" inputmode="decimal" value="${esc(fl[f.k] || '')}" placeholder="Pode preencher depois"></div>`).join('');
+  return (s.fields || []).map(f => {
+    const opt = f.req ? '' : ' <span style="font-weight:400;color:var(--muted)">opcional</span>';
+    if (f.t === 'seg') return `<div class="field"><span class="lb">${esc(f.l || 'Tipo')}</span><div class="seg tseg">${f.opts.map(o => `<button data-act="gseg" ${ref} data-k="${f.k}" data-v="${o}" aria-pressed="${fl[f.k] === o}">${o}</button>`).join('')}</div></div>`;
+    if (f.t === 'text') return `<div class="field"><label class="lb">${esc(f.l)}${opt}</label><input class="inp gf" ${ref} data-k="${f.k}" value="${esc(fl[f.k] || '')}" placeholder="${esc(f.ph || '')}"></div>`;
+    return `<div class="field"><label class="lb">${esc(f.l)} (${f.u})${opt}</label><input class="inp gf" ${ref} data-k="${f.k}" inputmode="decimal" value="${esc(fl[f.k] || '')}" placeholder="Pode preencher depois"></div>`;
+  }).join('');
 }
 async function renderGuide(){
   const p = await get('projects', view.id); if (!p) return go({name:'folder', id:null});
   curFolderId = pid0(p);
-  const items = await byIdx('items', 'projectId', p.id), st = guideSteps(items);
+  const items = await byIdx('items', 'projectId', p.id), st = guideSteps(items, p);
   const i = Math.max(0, Math.min(st.length - 1, view.step || 0)), s = st[i];
-  const it = items.find(x => x.step === s.key), fl = (it && it.fields) || {};
+  const it = items.find(x => x.step === s.key), fl = (it && it.fields) || {}, state = stepState(it);
   const phs = it ? (await Promise.all((it.photoIds || []).map(id => get('photos', id)))).filter(Boolean) : [];
   const done = st.filter(x => stepDone(items.find(y => y.step === x.key))).length;
-  const ref = `data-key="${s.key}"`;
+  const ref = `data-key="${s.key}"`, res = it?.status === 'ok' || it?.status === 'anomalia' ? it.status : 'none';
+  const last = i === st.length - 1;
   app.innerHTML = `
   <header class="top"><button class="icon-btn" data-act="open-project" data-id="${p.id}" aria-label="Voltar">${I.back}</button>
-    <h1>${esc(p.name)}<span class="sub">Passo ${i + 1} de ${st.length} · ${esc(s.sec)}</span></h1>
+    <h1>${esc(p.name)} · ${esc(s.t)}<span class="sub">Passo ${i + 1} de ${st.length} · ${esc(s.sec)}</span></h1>
     <button class="icon-btn" data-act="pend-new" aria-label="Registrar pendência">${I.flag}</button></header>
   <main>
     <div class="gprog"><i style="width:${Math.round(done / st.length * 100)}%"></i></div>
-    <div class="gsec">${esc(s.sec)}${stepDone(it) ? ' · <span style="color:var(--ok)">feito</span>' : ''}</div>
+    <div class="gsec">${esc(s.sec)} · <span class="st-${state}">${ST_LABEL[state]}</span></div><div class="savechip" data-save></div>
     <div class="gq">${esc(s.q)}</div>
-    ${phs.length ? `<div class="gph">${phs.map(ph => `<img src="${phSrc(ph, true)}" alt="">`).join('')}</div>` : ''}
-    <div class="photo-actions"><button class="btn primary" data-act="cam-step" data-key="${s.key}" style="min-height:58px">${I.cam}${phs.length ? 'Mais uma foto' : 'Tirar foto'}</button>
-      <button class="btn ghost" data-act="gal-step" data-key="${s.key}">${I.img}Galeria</button></div>
+    ${state === 'na' ? `<div class="panel"><b>Não se aplica.</b> ${esc(it.naWhy || '')}<br><button class="text-btn" data-act="na-undo" data-key="${s.key}">Desfazer “não se aplica”</button></div>` : `
     ${s.fields ? `<div class="panel">${gfieldsHtml(s, fl, ref)}</div>` : ''}
-    ${s.rep ? `<button class="btn ghost block" data-act="add-vaz" style="margin-bottom:12px">${I.plus}Adicionar outro ponto de vazão</button>` : ''}
-    <button class="btn ghost block" data-act="pend-new">${I.flag}Encontrou uma pendência?</button>
+    <div class="panel"><span class="lb">Foto da medição ${phs.length ? `(${phs.length})` : ''}</span>
+      ${phs.length ? `<div class="gph">${phs.map(ph => `<img src="${phSrc(ph, true)}" alt="" data-act="zoom" data-id="${ph.id}">`).join('')}</div>` : '<p class="hint" style="margin:0 0 8px">Use o botão da câmera abaixo ou escolha da galeria.</p>'}
+      <button class="text-btn" data-act="gal-step" data-key="${s.key}">${I.img}Escolher da galeria</button></div>
+    <div class="field"><span class="lb">Resultado técnico</span><div class="seg tseg">${['ok', 'anomalia', 'none'].map(v => `<button data-act="gres" data-key="${s.key}" data-v="${v}" aria-pressed="${res === v}">${RES_LABEL[v]}</button>`).join('')}</div></div>
+    ${s.rep ? `<button class="btn ghost block" data-act="add-rep" data-base="${s.key.split('_')[0]}" style="margin-bottom:10px">${I.plus}Adicionar outro ponto</button>` : ''}
+    <div class="row" style="margin-bottom:10px"><button class="btn ghost" data-act="na" data-key="${s.key}">Não se aplica</button><button class="btn ghost" data-act="pend-new">${I.flag}Pendência</button></div>`}
   </main>
   <nav class="bottom"><div class="bottom-inner">
     <div class="side"><button class="text-btn" data-act="gstep" data-d="-1" ${i ? '' : 'disabled'}>${I.left}Anterior</button></div>
     <button class="fab" data-act="cam-step" data-key="${s.key}" aria-label="Tirar foto">${I.cam}</button>
-    <div class="side right">${i < st.length - 1 ? `<button class="text-btn" data-act="gstep" data-d="1">${stepDone(it) ? 'Próximo' : 'Pular'}${I.right}</button>`
-      : `<button class="text-btn" data-act="open-project" data-id="${p.id}">Concluir${I.right}</button>`}</div>
+    <div class="side right">${last ? `<button class="text-btn" data-act="review" data-id="${p.id}">Revisar${I.right}</button>`
+      : `<button class="text-btn" data-act="gstep" data-d="1">${stepDone(it) ? 'Próximo' : 'Preencher depois'}${I.right}</button>`}</div>
   </div></nav>`;
+  setSaveState();
 }
 async function renderFill(){
   const p = await get('projects', view.id); if (!p) return go({name:'folder', id:null});
   const skip = view.skip || [];
   const items = (await byIdx('items', 'projectId', p.id)).sort(byOrder);
-  const todo = items.filter(i => i.kind === 'step' && (i.photoIds || []).length && !(i.fields && i.fields.v) && (stepDef(i.step)?.fields || []).some(f => f.k === 'v'));
+  const todo = items.filter(needsValue);
   const it = todo.find(i => !skip.includes(i.id));
   if (!it) { toast(todo.length ? 'Os itens restantes foram pulados.' : 'Todas as medições estão preenchidas.'); return go({name:'project', id: p.id}); }
   const s = stepDef(it.step), ph = await get('photos', it.photoIds[it.photoIds.length - 1]);
   app.innerHTML = `
   <header class="top"><button class="icon-btn" data-act="open-project" data-id="${p.id}" aria-label="Voltar">${I.back}</button>
-    <h1>Preencher medições<span class="sub">${todo.length} ${todo.length === 1 ? 'restante' : 'restantes'} · ${esc(p.name)}</span></h1><span style="width:44px"></span></header>
+    <h1>${esc(p.name)} · ${esc(it.title)}<span class="sub">Preencher medições · ${todo.length} ${todo.length === 1 ? 'restante' : 'restantes'}</span></h1><span style="width:44px"></span></header>
   <main>
-    <div class="gq" style="margin-top:4px">${esc(it.title)}</div>
-    ${ph ? `<figure class="photo" style="margin-bottom:12px"><img src="${phSrc(ph)}" alt=""></figure>` : ''}
-    <div class="panel">${gfieldsHtml(s, it.fields || {}, `data-id="${it.id}"`)}</div>
+    ${ph ? `<figure class="photo" style="margin-bottom:12px"><img src="${phSrc(ph)}" alt="" data-act="zoom" data-id="${ph.id}"></figure>` : ''}
+    <div class="panel">${gfieldsHtml(s, it.fields || {}, `data-id="${it.id}"`)}</div><div class="savechip" data-save></div>
     <div class="row"><button class="btn ghost" data-act="fill-skip" data-id="${it.id}">Pular</button><button class="btn primary" data-act="fill-next">Salvar e próximo</button></div>
   </main>`;
-  setTimeout(() => { const x = document.querySelector('.gf[data-k="v"]'); if (x) x.focus(); }, 80);
+  setTimeout(() => { const x = [...document.querySelectorAll('.gf')].find(e => !e.value); if (x) x.focus(); }, 80);
 }
 const gfT = {};
 async function saveGuideField(el){
@@ -1380,7 +1421,7 @@ async function saveGuideField(el){
   const it = el.dataset.id ? await get('items', el.dataset.id) : await ensureStepItem(view.id, el.dataset.key);
   if (!it) return; it.fields = {...(it.fields || {}), [k]: v}; it.updatedAt = Date.now(); await put('items', it);
 }
-function queueGuideField(el){ const id = (el.dataset.id || el.dataset.key) + el.dataset.k; clearTimeout(gfT[id]); gfT[id] = setTimeout(() => saveGuideField(el), 400); }
+function queueGuideField(el){ setSaveState('saving'); const id = (el.dataset.id || el.dataset.key) + el.dataset.k; clearTimeout(gfT[id]); gfT[id] = setTimeout(() => saveGuideField(el), 400); }
 async function flushGuideFields(){ for (const el of document.querySelectorAll('.gf')) { const id = (el.dataset.id || el.dataset.key) + el.dataset.k; if (gfT[id]) { clearTimeout(gfT[id]); delete gfT[id]; await saveGuideField(el); } } }
 function pendSheet(pid){
   let prio = 'Normal';
@@ -1388,7 +1429,7 @@ function pendSheet(pid){
     <div class="field"><label class="lb" for="pd-desc">O que foi encontrado</label><textarea class="inp" id="pd-desc" placeholder="Ex.: dreno obstruído, água no forro"></textarea></div>
     <div class="field"><label class="lb" for="pd-loc">Local <span style="font-weight:400;color:var(--muted)">opcional</span></label><input class="inp" id="pd-loc" placeholder="Ex.: sala 412"></div>
     <div class="field"><span class="lb">Prioridade</span><div class="seg tseg">${['Urgente', 'Alta', 'Normal'].map(o => `<button data-pr="${o}" aria-pressed="${o === prio}">${o}</button>`).join('')}</div></div>
-    <button class="btn primary block" data-c="ok">${I.cam}Salvar e tirar as fotos</button>`);
+    <button class="btn primary block" data-c="ok">${I.cam}Salvar e adicionar as fotos</button>`);
   s.addEventListener('click', async ev => {
     const pb = ev.target.closest('[data-pr]');
     if (pb) { prio = pb.dataset.pr; s.querySelectorAll('[data-pr]').forEach(x => x.setAttribute('aria-pressed', x === pb)); return; }
@@ -1398,6 +1439,47 @@ function pendSheet(pid){
     Object.assign(it, {kind:'pend', status:'anomalia', order: 1000 + Date.now() / 1e13, fields: {prio, local: $('#pd-loc', s).value.trim()}});
     await put('items', it); closeSheet(); go({name:'item', id: it.id});
   });
+}
+/* revisão antes de exportar */
+async function reviewHtml(ids){
+  const lines = []; let missPh = 0, partial = 0, none = 0, need = 0, pends = 0;
+  for (const pid of ids) {
+    const p = await get('projects', pid); if (!p) continue;
+    const items = await byIdx('items', 'projectId', pid);
+    pends += items.filter(i => i.kind === 'pend').length;
+    if (!tplOf(p).guided) continue;
+    for (const s of guideSteps(items, p)) {
+      const it = items.find(i => i.step === s.key), st = stepState(it);
+      if (st === 'none') { none++; if (lines.length < 8) lines.push(`${p.name} · ${s.t}: não iniciado`); }
+      if (st === 'partial') { partial++; const f = !(it.photoIds || []).length;
+        if (f) missPh++; if (lines.length < 8) lines.push(`${p.name} · ${s.t}: ${f ? 'falta a foto' : 'faltam valores'}`); }
+      if (it && needsValue(it)) need++;
+    }
+  }
+  const ok = !none && !partial;
+  return `<div class="panel" style="margin-bottom:14px;${ok ? '' : 'border:1px solid var(--warn)'}"><b>${ok ? 'Tudo preenchido' : 'Revisão antes de gerar'}</b>
+    <div class="hint" style="margin:6px 0">${none} não iniciados · ${partial} parciais (${missPh} sem foto, ${need} sem valor) · ${pends} pendências registradas</div>
+    ${lines.map(l => `<div style="font-size:13.5px;padding:2px 0">• ${esc(l)}</div>`).join('')}${(none + partial) > lines.length ? '<div class="hint">e mais…</div>' : ''}
+    ${ok ? '' : '<p class="hint">Você pode gerar assim mesmo: o que faltar sai como “não iniciado” ou “ver foto”.</p>'}</div>`;
+}
+/* estado de salvamento sempre visível */
+let saveState = 'ok';
+function setSaveState(st){
+  if (st) saveState = st;
+  const t = saveState === 'saving' ? 'Salvando…' : saveState === 'err' ? 'Falha ao salvar: tente de novo'
+    : cloud.on && (pending || !navigator.onLine) ? 'Salvo no aparelho · aguardando sincronização' : cloud.on ? 'Salvo no aparelho e na nuvem' : 'Salvo no aparelho';
+  document.querySelectorAll('[data-save]').forEach(el => { el.textContent = t; el.className = 'savechip ' + saveState; });
+}
+function zoomPhoto(src){
+  const ov = document.createElement('div'); ov.className = 'zoom'; ov.innerHTML = `<img src="${src}" alt=""><button>Fechar</button>`;
+  ov.addEventListener('click', () => ov.remove()); document.body.appendChild(ov);
+}
+
+function offerSavePhone(files){
+  const s = openSheet(`<h2>Salvar no celular?</h2><p class="hint" style="margin:-6px 0 14px">A foto já está salva no app. Toque abaixo para guardar uma cópia também na galeria ou em Arquivos.</p>
+    <button class="btn primary block" data-c="sv">${I.save}Salvar cópia no celular</button>`);
+  s.addEventListener('click', async ev => { if (!ev.target.closest('[data-c="sv"]')) return;
+    try { await navigator.share({files}); } catch (e) {} closeSheet(); });
 }
 
 async function checkUpdate(manual){
@@ -1534,7 +1616,7 @@ async function makeReport(o){
     const HV = HVAC_STEPS, num = v => numVal(v);
     for (const [ei, e] of eqs.entries()) {
       const n = ei + 1, pav = e.path[e.path.length - 1]?.name || '', hdr = `${n}. ${e.p.name}`, hr = `${pav} · ${dateStr}`;
-      const its = e.items.filter(i => i.kind !== 'pend'), labels = new Map(); let k = 0;
+      const its = e.items.filter(i => i.kind !== 'pend' && !i.na), labels = new Map(); let k = 0;
       its.forEach(it => phOf(e, it).forEach(ph => labels.set(ph.id, `${n}.${++k}`)));
       const lab = it => { const p = phOf(e, it)[0]; return p ? 'ver foto ' + labels.get(p.id) : '—'; };
       const byStep = key => its.find(i => i.step === key);
@@ -1550,7 +1632,7 @@ async function makeReport(o){
         T(lines, tx + 4, ry + 5.5, {s:9, c:[120, 30, 20]}); ry += h + 3;
       }
       y = Math.max(plqPh ? y + 72 : y + 26, ry + 4);
-      if (e.p.template === 'hvac') {
+      if (tplOf(e.p).guided) {
         const need = h => { if (y + h > H - 22) y = page(hdr, hr); };
         const vz = its.filter(i => (i.step || '').startsWith('vaz_') && (phOf(e, i).length || i.fields?.v || i.fields?.proj));
         if (vz.length) {
@@ -1558,11 +1640,23 @@ async function makeReport(o){
           const cols = [['Ponto', 0], ['Tipo', 30], ['Projeto m³/h', 70], ['Medido m³/h', 100], ['Desvio', 132]];
           cols.forEach(([t, dx]) => T(t.toUpperCase(), M + 2 + dx, y, {s:7.5, b:true, c:MUT})); doc.setDrawColor(29, 34, 41); doc.line(M, y + 2, W - M, y + 2); y += 7;
           vz.forEach((it, j) => { const f = it.fields || {}, a = num(f.proj), b = num(f.v);
-            T('Ponto ' + (j + 1), M + 2, y, {s:9.5, b:true}); T(f.tipo || '—', M + 32, y, {s:9.5}); T(f.proj || '—', M + 72, y, {s:9.5}); T(f.v || lab(it), M + 102, y, {s:9.5, c: f.v ? [29, 34, 41] : MUT});
+            T(f.ponto || 'Ponto ' + (j + 1), M + 2, y, {s:9, b:true, w: 29, n:1}); T(f.tipo || '—', M + 32, y, {s:9.5}); T(f.proj || '—', M + 72, y, {s:9.5}); T(f.v || lab(it), M + 102, y, {s:9.5, c: f.v ? [29, 34, 41] : MUT});
             if (a && b !== null) { const d = (b - a) / a * 100, ok = Math.abs(d) <= 10, c = ok ? GRN : RED;
               T((d > 0 ? '+' : '') + d.toFixed(1).replace('.', ',') + '%', M + 134, y, {s:9.5, b:true, c});
               const bx = M + 152, bw = 26; doc.setFillColor(238, 241, 244); doc.roundedRect(bx, y - 2.6, bw, 2.4, 1.2, 1.2, 'F'); const w = Math.min(Math.abs(d), 20) / 20 * bw / 2;
               doc.setFillColor(...c); doc.rect(d >= 0 ? bx + bw / 2 : bx + bw / 2 - w, y - 2.6, w, 2.4, 'F'); doc.setDrawColor(150); doc.line(bx + bw / 2, y - 3.4, bx + bw / 2, y + .6); }
+            doc.setDrawColor(...LN); doc.line(M, y + 2.5, W - M, y + 2.5); y += 7; });
+          y += 3;
+        }
+        const hd = its.filter(i => (i.step || '').startsWith('hid_') && (phOf(e, i).length || i.fields?.v || i.fields?.proj));
+        if (hd.length) {
+          need(20 + hd.length * 7); y = sec('TAB hidrônico · tolerância ±10%', y);
+          [['Ponto', 0], ['Projeto m³/h', 40], ['Medido m³/h', 64], ['Desvio', 88], ['Dif. P kPa', 108], ['Dif. T °C', 132], ['Foto', 156]].forEach(([t, dx]) => T(t.toUpperCase(), M + 2 + dx, y, {s:7, b:true, c:MUT}));
+          doc.setDrawColor(29, 34, 41); doc.line(M, y + 2, W - M, y + 2); y += 7;
+          hd.forEach((it, j) => { const f = it.fields || {}, a = num(f.proj), b = num(f.v), te = num(f.te), ts = num(f.ts), pp = phOf(e, it)[0];
+            T(f.ponto || 'Ponto ' + (j + 1), M + 2, y, {s:9, b:true, w: 38, n:1}); T(f.proj || '—', M + 42, y, {s:9}); T(f.v || '—', M + 66, y, {s:9});
+            if (a && b !== null) { const d = (b - a) / a * 100; T((d > 0 ? '+' : '') + d.toFixed(1).replace('.', ',') + '%', M + 90, y, {s:9, b:true, c: Math.abs(d) <= 10 ? GRN : RED}); } else T('—', M + 90, y, {s:9});
+            T(f.dp || '—', M + 110, y, {s:9}); T(te !== null && ts !== null ? Math.abs(te - ts).toFixed(1).replace('.', ',') : '—', M + 134, y, {s:9}); T(pp ? labels.get(pp.id) : '—', M + 158, y, {s:9, c:MUT});
             doc.setDrawColor(...LN); doc.line(M, y + 2.5, W - M, y + 2.5); y += 7; });
           y += 3;
         }
@@ -1615,11 +1709,12 @@ async function compileSheet(fid){
   const f = await get('folders', fid); const ids = await folderProjectIds(fid);
   if (!ids.length) { toast('Esta pasta não tem relatórios.'); return; }
   if (!f.docNumber) { f.docNumber = await nextDocNumber(); await put('folders', f); }
+  const rv = await reviewHtml(ids);
   const base = f.name.replace(/[\\/:*?"<>|]+/g, '-').slice(0, 40);
   const s = openSheet(`<h2>Relatório da pasta</h2><p class="hint" style="margin:-6px 0 14px">${esc(f.name)}: ${ids.length} ${ids.length === 1 ? 'relatório' : 'relatórios'} juntos em um PDF, com o quadro de pendências geral no início.</p>
     <div class="field"><label class="lb" for="cp-name">Nome do arquivo</label><input class="inp" id="cp-name" maxlength="40" value="${esc(base)}"></div>
     <div class="field"><label class="lb" for="cp-doc">Nº do documento</label><input class="inp" id="cp-doc" inputmode="numeric" value="${esc(f.docNumber)}"></div>
-    <button class="btn primary block" id="cp-go">${I.pdf}Gerar PDF</button>`);
+    ${rv}<button class="btn primary block" id="cp-go">${I.pdf}Gerar PDF</button>`);
   $('#cp-go', s).addEventListener('click', async () => {
     const d = $('#cp-doc', s).value.trim(); if (d && d !== String(f.docNumber)) { f.docNumber = d; await put('folders', f); }
     const folders = await getAll('folders'), path = pathTo(fid, folders);
@@ -1812,13 +1907,14 @@ async function downloadTemplate(){
 function blobToDataURL(b){ return new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = () => rej(r.error); r.readAsDataURL(b); }); }
 const WINANSI = '€‚ƒ„…†‡ˆ‰Š‹ŒŽ‘’“”•–—˜™š›œžŸ';
 const PDF_MAP = {'−':'-','Ω':'Ohm','Ω':'Ohm','≤':'<=','≥':'>=','≈':'~','√':'raiz','Δ':'Delta','φ':'fi','θ':'teta','→':'->','✓':'OK'};
-const pdfSafe = s => String(s ?? '').replace(/[^\x00-\xFF]/g, c => PDF_MAP[c] || (WINANSI.includes(c) ? c : '?'));
+const pdfSafe = s => String(s ?? '').replace(/[^\x00-\xFF]/g, c => PDF_MAP[c] || (WINANSI.includes(c) ? c : '?')).replace(/³/g, '3');
 
 async function shareSheet(pid){
   const p = await get('projects', pid);
   if (!p.docNumber) { p.docNumber = await nextDocNumber(); await put('projects', p); }
   const items = await byIdx('items', 'projectId', pid);
   const nPh = items.reduce((m, x) => m + (x.photoIds || []).length, 0);
+  const rv = await reviewHtml([pid]);
   const nNo = items.filter(x => !(x.photoIds || []).length).length;
   const base = (p.name || 'relatorio').replace(/[\\/:*?"<>|]+/g, '-').slice(0, 40);
   const s = openSheet(`<h2>Compartilhar</h2>
@@ -1828,15 +1924,15 @@ async function shareSheet(pid){
     <div class="two"><div class="field"><label class="lb" for="sh-doc">Nº do documento</label><input class="inp" id="sh-doc" inputmode="numeric" value="${esc(p.docNumber)}"></div>
 </div>
     <p class="hint" style="margin:-4px 0 16px">${nPh} ${nPh === 1 ? 'foto' : 'fotos'} no relatório.</p>
-    <button class="btn primary block" id="sh-go">${I.pdf}Gerar PDF</button>`);
+    ${rv}<button class="btn primary block" id="sh-go">${I.pdf}Gerar PDF</button>`);
   $('#sh-name', s).addEventListener('input', e => { $('#sh-cnt', s).textContent = `${e.target.value.length}/40`; });
   $('#sh-go', s).addEventListener('click', async () => {
     const doc = $('#sh-doc', s).value.trim();
     if (doc && doc !== String(p.docNumber)) { p.docNumber = doc; await put('projects', p); }
-    const opts = {filename: ($('#sh-name', s).value.trim() || base) + '.pdf', perPage: +$('#sh-per', s).value,
+    const opts = {filename: ($('#sh-name', s).value.trim() || base) + '.pdf', perPage: 4,
       includeEmpty: false, showText: true};
     const fl = await getAll('folders'), pth = pathTo(pid0(p), fl);
-    closeSheet(); makeReport({ids:[pid], docNumber: p.docNumber, filename: opts.filename, title: pth[1]?.name || p.name,
+    closeSheet(); makeReport({ids:[pid], kind: tplOf(p).guided ? tplOf(p).name.toUpperCase() : 'INSPEÇÃO', docNumber: p.docNumber, filename: opts.filename, title: pth[1]?.name || p.name,
       sub: [p.name, pth[pth.length - 1]?.name].filter(Boolean).join(' · ')});
   });
 }
@@ -2124,14 +2220,21 @@ document.addEventListener('click', async e => {
     case 'gal-add': camTarget = view.id; $('#in-gal').value = ''; $('#in-gal').click(); break;
     case 'version': checkUpdate(true); break;
     case 'sketch': openSketch(id); break;
-    case 'guide': { const its = await byIdx('items', 'projectId', view.id), st = guideSteps(its); const f = st.findIndex(s => !stepDone(its.find(i => i.step === s.key)));
+    case 'guide': { const p0 = await get('projects', view.id), its = await byIdx('items', 'projectId', view.id), st = guideSteps(its, p0); const f = st.findIndex(s => !stepDone(its.find(i => i.step === s.key)));
       go({name:'guide', id: view.id, step: f < 0 ? 0 : f}); break; }
+    case 'na': { await flushGuideFields(); const key = b.dataset.key;
+      promptSheet('Não se aplica', 'Justificativa (opcional)', '', 'Confirmar', async v => { const it = await ensureStepItem(view.id, key); it.na = true; it.naWhy = v; it.updatedAt = Date.now(); await put('items', it); view.step = (view.step || 0) + 1; render(); }, true); break; }
+    case 'na-undo': { const it = await ensureStepItem(view.id, b.dataset.key); it.na = false; it.naWhy = ''; await put('items', it); render(); break; }
+    case 'gres': { await flushGuideFields(); const it = await ensureStepItem(view.id, b.dataset.key); it.status = b.dataset.v === 'none' ? null : b.dataset.v; await put('items', it); render(); break; }
+    case 'review': await flushGuideFields(); shareSheet(id); break;
+    case 'zoom': { const ph = await get('photos', id); if (ph) zoomPhoto(phSrc(ph)); break; }
+    case 'save-phone': await setSetting('savePhone', !(await getSetting('savePhone'))); render(); break;
     case 'gstep': await flushGuideFields(); view.step = (view.step || 0) + +b.dataset.d; render().then(() => window.scrollTo(0, 0)); break;
-    case 'gseg': { const k = b.dataset.k, v = b.dataset.v; const it = b.dataset.id ? await get('items', b.dataset.id) : await ensureStepItem(view.id, b.dataset.key);
+    case 'gseg': { await flushGuideFields(); const k = b.dataset.k, v = b.dataset.v; const it = b.dataset.id ? await get('items', b.dataset.id) : await ensureStepItem(view.id, b.dataset.key);
       it.fields = {...(it.fields || {}), [k]: it.fields?.[k] === v ? '' : v}; await put('items', it); render(); break; }
-    case 'add-vaz': { await flushGuideFields(); const its = await byIdx('items', 'projectId', view.id);
-      const n = Math.max(1, its.filter(i => (i.step || '').startsWith('vaz_')).length) + 1; await ensureStepItem(view.id, 'vaz_' + n);
-      const st = guideSteps(await byIdx('items', 'projectId', view.id)); view.step = st.findIndex(s => s.key === 'vaz_' + n); render(); break; }
+    case 'add-rep': { await flushGuideFields(); const base = b.dataset.base, p0 = await get('projects', view.id), its = await byIdx('items', 'projectId', view.id);
+      const n = Math.max(1, its.filter(i => (i.step || '').startsWith(base + '_')).length) + 1; await ensureStepItem(view.id, base + '_' + n);
+      const st = guideSteps(await byIdx('items', 'projectId', view.id), p0); view.step = st.findIndex(s => s.key === base + '_' + n); render(); break; }
     case 'pend-new': await flushGuideFields(); pendSheet(view.name === 'item' ? (await get('items', view.id)).projectId : view.id); break;
     case 'fill': go({name:'fill', id: view.id}); break;
     case 'fill-next': await flushGuideFields(); render(); break;
@@ -2163,9 +2266,10 @@ document.addEventListener('input', e => {
 });
 async function onPhotos(files){
   if (!files.length) return;
+  getSetting('savePhone').then(on => { if (on) setTimeout(() => offerSavePhone(files), 1500); });
   toast('Salvando foto…', 30000);
   try {
-    if (typeof camTarget === 'string' && camTarget.startsWith('step:')) { const it = await ensureStepItem(view.id, camTarget.slice(5)); await addPhotos(it.id, files); hideToast(); await render(); return; }
+    if (typeof camTarget === 'string' && camTarget.startsWith('step:')) { await flushGuideFields(); const it = await ensureStepItem(view.id, camTarget.slice(5)); await addPhotos(it.id, files); hideToast(); await render(); return; }
     if (camTarget === 'new') { const it = await createItem(view.id); await addPhotos(it.id, files); hideToast(); go({name:'item', id: it.id}); }
     else if (camTarget) { await addPhotos(camTarget, files); hideToast(); await render(); const strip = $('.photos'); if (strip) strip.scrollLeft = strip.scrollWidth; }
   } catch (err) { toast('Não foi possível salvar a foto: ' + err.message); }
