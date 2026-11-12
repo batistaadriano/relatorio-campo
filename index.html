@@ -273,6 +273,9 @@ textarea.inp{min-height:120px;resize:vertical;line-height:1.5}
 .st-partial{color:var(--warn)}.st-filled{color:var(--ok)}.st-na,.st-none{color:var(--muted)}
 .zoom{position:fixed;inset:0;z-index:40;background:#000;display:grid;place-items:center}.zoom img{max-width:100%;max-height:100%}
 .zoom button{position:absolute;top:calc(12px + env(safe-area-inset-top,0px));right:12px;color:#fff;background:rgba(255,255,255,.18);padding:8px 14px;border-radius:10px;font-weight:600}
+.gphi{flex:none;width:110px;position:relative}.gphi img{width:110px;height:92px;object-fit:cover;border-radius:12px;display:block}
+.gphi span{display:block;font-size:11.5px;line-height:1.3;color:var(--muted);margin-top:3px;max-height:3em;overflow:hidden}
+.gphi .text-btn{min-height:30px;padding:0}.calcout{font-size:16px;margin:8px 0}
 .hidden{display:none!important}
 .ptitle{font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--accent-text);margin:0 0 12px}
 .tseg{grid-template-columns:repeat(auto-fit,minmax(90px,1fr))}
@@ -312,6 +315,7 @@ textarea.inp{min-height:120px;resize:vertical;line-height:1.5}
 <input type="file" id="in-logo" accept="image/*" class="sr" tabindex="-1">
 <input type="file" id="in-wm" accept="image/*" class="sr" tabindex="-1">
 <input type="file" id="in-flogo" accept="image/*" class="sr" tabindex="-1">
+<input type="file" id="in-plant" accept="image/*,application/pdf,.pdf" class="sr" tabindex="-1">
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -381,7 +385,7 @@ async function os(name, mode = 'readonly'){ const d = await idb(); return d.tran
 const getAll = async n => P((await os(n)).getAll());
 const byIdx = async (n, idx, v) => P((await os(n)).index(idx).getAll(v));
 const get = async (n, k) => P((await os(n)).get(k));
-const APP_VERSION = 9, APP_DATE = '11/11/2026';
+const APP_VERSION = 10, APP_DATE = '11/11/2026';
 const SYNCED = ['folders', 'projects', 'items', 'photos'];
 const rawPut = async (n, v) => P((await os(n, 'readwrite')).put(v));
 const put = async (n, v) => { if (SYNCED.includes(n) && v) v.mt = Date.now(); let r; try { r = await rawPut(n, v); } catch (e) { setSaveState('err'); throw e; } cloudPush(n, [v]); if (n !== 'settings') setSaveState('ok'); return r; };
@@ -714,6 +718,7 @@ async function renderMore(){
       ${row('template', I.sheet, 'Baixar planilha modelo', 'Exemplo de colunas para importar')}</div>
     <div class="sec"><h2>Aplicativo</h2></div>
     <div class="group">${row('version', I.save, 'Versão ' + APP_VERSION, 'Atualizada em ' + APP_DATE + ' · toque para verificar', 'blue')}
+      ${row('grilles', I.sheet, 'Grelhas e difusores', 'Fórmulas dos fabricantes para a calculadora de vazão')}
       ${row('save-phone', I.img, 'Salvar fotos também no celular', (await getSetting('savePhone')) ? 'Ligado: oferece salvar após cada foto' : 'Desligado')}</div>
     <div class="sec"><h2>Equipe na nuvem</h2></div>
     <div class="group">${cloud.on || cloud.orgId ? row('team', I.case, 'Equipe ' + esc(cloud.orgName || ''), esc(cloud.email || '') + ' · ' + esc(ROLE_LABEL[cloud.role] || ''), 'blue') + row('cloud-logout', I.upload, 'Sair da conta', 'Os relatórios continuam neste celular')
@@ -804,6 +809,7 @@ async function renderItem(){
     <button class="icon-btn" data-act="item-menu" aria-label="Mais opções">${I.more}</button></header>
   <main>
     ${photoHtml}
+    ${it.kind === 'pend' ? `<button class="btn ghost block" data-act="croqui-item" data-id="${it.id}" style="margin-bottom:10px">${I.edit}Croqui na planta do projeto</button>` : ''}
     <div class="photo-actions"><button class="btn ghost" data-act="cam-add">${I.cam}Tirar foto</button>
       <button class="btn ghost" data-act="gal-add">${I.img}Da galeria</button></div>
     <div class="panel">
@@ -848,10 +854,10 @@ async function saveFields(){
 
 /* ---------- modelos de formulário ---------- */
 const TEMPLATES = {
-  hvac: {name:'HVAC · Fan coil', desc:'Plaqueta, vazão de ar, filtro, ambiente e elétrica', status:false, guided:true, noteHint:'Ex.: medição no ponto 2', fields:[]},
-  split: {name:'HVAC · Split', desc:'Plaquetas, filtro, ambiente e elétrica', status:false, guided:true, noteHint:'Ex.: evaporadora', fields:[]},
-  exaustor: {name:'HVAC · Exaustor', desc:'Plaqueta, vazão de exaustão e elétrica', status:false, guided:true, noteHint:'Ex.: grelha 2', fields:[]},
-  tabar: {name:'TAB de ar', desc:'Vazões por ponto (difusores, grelhas) e ambiente', status:false, guided:true, noteHint:'Ex.: difusor D-01', fields:[]},
+  hvac: {name:'HVAC · Fan coil', desc:'Vazão de ar, filtro, ambiente, elétrica, TAB hidrônico e plaqueta: você escolhe as etapas', status:false, guided:true, noteHint:'Ex.: medição no ponto 2', fields:[]},
+  split: {hidden:true, name:'HVAC · Split', desc:'Plaquetas, filtro, ambiente e elétrica', status:false, guided:true, noteHint:'Ex.: evaporadora', fields:[]},
+  exaustor: {hidden:true, name:'HVAC · Exaustor', desc:'Plaqueta, vazão de exaustão e elétrica', status:false, guided:true, noteHint:'Ex.: grelha 2', fields:[]},
+  tabar: {hidden:true, name:'TAB de ar', desc:'Vazões por ponto (difusores, grelhas) e ambiente', status:false, guided:true, noteHint:'Ex.: difusor D-01', fields:[]},
   tabhid: {name:'TAB hidrônico', desc:'Vazão de água, pressão diferencial e temperaturas por válvula', status:false, guided:true, noteHint:'Ex.: print do medidor', fields:[]},
   ensaio: {name:'Ensaio / Teste', desc:'Fotos numeradas com observação e resultado', status:true, noteHint:'Ex.: Teste Fase R x S', fields:[]},
   pendencia: {name:'Pendências', desc:'Local, responsável, prazo, prioridade e situação', status:false, noteHint:'Ex.: Antes / Depois', fields:[
@@ -860,7 +866,7 @@ const TEMPLATES = {
     {k:'prazo', l:'Prazo', t:'date'},
     {k:'prio', l:'Prioridade', t:'seg', opts:['Urgente', 'Alta', 'Normal', 'Baixa']},
     {k:'sit', l:'Situação', t:'seg', opts:['Aberta', 'Em andamento', 'Resolvida']}]},
-  arcond: {name:'Ar-condicionado', desc:'TAG, dados do equipamento e medições', status:true, noteHint:'Ex.: Manifold – pressão de sucção', fields:[
+  arcond: {hidden:true, name:'Ar-condicionado', desc:'TAG, dados do equipamento e medições', status:true, noteHint:'Ex.: Manifold – pressão de sucção', fields:[
     {k:'tag', pl:'TAG', l:'TAG do equipamento', t:'text', ph:'Ex.: SPLIT-03'},
     {k:'modelo', pl:'Modelo', l:'Fabricante / modelo', t:'text', ph:'Ex.: Daikin FTKP'},
     {k:'cap', pl:'Capacidade', l:'Capacidade', t:'text', ph:'Ex.: 36.000 BTU/h'},
@@ -909,7 +915,7 @@ function itemSummary(p, it){
 function newReportSheet(fid){
   const s = openSheet(`<h2>Novo relatório</h2>
     <div class="field"><label class="lb" for="nr-name">Título do relatório</label><input class="inp" id="nr-name" maxlength="100" placeholder="Ex.: [906] LINK-01"></div>
-    <span class="lb">Modelo</span><div class="tpls">${Object.entries(TEMPLATES).map(([k, t], i) =>
+    <span class="lb">Modelo</span><div class="tpls">${Object.entries(TEMPLATES).filter(([, t]) => !t.hidden).map(([k, t], i) =>
       `<label class="tpl"><input type="radio" name="nr-tpl" value="${k}" ${i === 0 ? 'checked' : ''}><span><b>${esc(t.name)}</b><small>${esc(t.desc)}</small></span></label>`).join('')}</div>
     <button class="btn primary block" id="nr-go" style="margin-top:14px">Criar relatório</button>`);
   setTimeout(() => $('#nr-name', s).focus(), 50);
@@ -1289,31 +1295,33 @@ async function cloudBoot(){
 /* ---------- HVAC: inspeção guiada ---------- */
 const NUM = u => ({k:'v', l:'Valor medido', u, req:true});
 const HVAC_STEPS = [
-  {key:'plaqueta', sec:'Identificação', t:'Plaqueta', q:'Adicione a foto da plaqueta do equipamento'},
-  {key:'plaqueta_cond', sec:'Identificação', t:'Plaqueta da condensadora', q:'Adicione a foto da plaqueta da condensadora'},
-  {key:'vaz', rep:true, sec:'Vazão de ar', t:'Vazão · ponto', q:'Identifique o ponto, informe as vazões e adicione a foto da medição',
-    fields:[{k:'ponto', t:'text', l:'Qual ponto está sendo medido?', ph:'Ex.: Difusor D-01 / Sala 1203', req:true}, {k:'tipo', t:'seg', l:'Tipo', opts:['Insuflamento', 'Retorno', 'Exaustão', 'Ar externo'], req:true},
+  {key:'vaz', rep:true, sec:'Vazão de ar', t:'Vazão', q:'Medição de vazão no terminal. Informe o tipo e a vazão de projeto, adicione as fotos das leituras e toque em cada foto para registrar o valor.',
+    fields:[{k:'tipo', t:'seg', l:'Tipo de terminal', opts:['Insuflamento', 'Retorno', 'Exaustão', 'Ar externo'], req:true},
       {k:'proj', l:'Vazão de projeto', u:'m³/h', req:true}, {k:'v', l:'Vazão medida', u:'m³/h', req:true}]},
-  {key:'filtro', sec:'Filtro', t:'Filtro', q:'Informe a pressão diferencial do filtro e adicione a foto do manômetro', fields:[{k:'v', l:'Pressão medida', u:'Pa', req:true}, {k:'troca', l:'Pressão de troca', u:'Pa'}]},
-  {key:'amb', sec:'Ambiente', t:'Ambiente', q:'Informe temperatura e umidade e adicione a foto do termo-higrômetro', fields:[{k:'v', l:'Temperatura', u:'°C', req:true}, {k:'ur', l:'Umidade', u:'%', req:true}]},
-  {key:'v_rs', sec:'Elétrica', t:'Tensão R-S', q:'Tensão entre as fases R-S: valor e foto', fields:[NUM('V')]},
-  {key:'v_st', sec:'Elétrica', t:'Tensão S-T', q:'Tensão entre as fases S-T: valor e foto', fields:[NUM('V')]},
-  {key:'v_tr', sec:'Elétrica', t:'Tensão T-R', q:'Tensão entre as fases T-R: valor e foto', fields:[NUM('V')]},
-  {key:'i_r', sec:'Elétrica', t:'Corrente Fase R', q:'Corrente na Fase R: valor e foto', fields:[NUM('A')]},
-  {key:'i_s', sec:'Elétrica', t:'Corrente Fase S', q:'Corrente na Fase S: valor e foto', fields:[NUM('A')]},
-  {key:'i_t', sec:'Elétrica', t:'Corrente Fase T', q:'Corrente na Fase T: valor e foto', fields:[NUM('A')]},
-  {key:'hid', rep:true, sec:'TAB hidrônico', t:'Ponto hidrônico', q:'Identifique a válvula ou circuito, informe as medições e adicione a foto ou o print da tela do medidor',
+  {key:'hid', rep:true, sec:'TAB hidrônico', t:'Ponto hidrônico', q:'Balanceamento hidrônico. Identifique a válvula ou o circuito, registre as leituras e adicione a foto ou o print do medidor.',
     fields:[{k:'ponto', t:'text', l:'TAG da válvula / circuito', ph:'Ex.: VBC-03 · FCT-01-1P', req:true}, {k:'proj', l:'Vazão de projeto', u:'m³/h', req:true}, {k:'v', l:'Vazão medida', u:'m³/h', req:true},
-      {k:'dp', l:'Pressão diferencial', u:'kPa'}, {k:'te', l:'Temperatura de entrada', u:'°C'}, {k:'ts', l:'Temperatura de saída', u:'°C'}]}
+      {k:'dp', l:'Pressão diferencial', u:'kPa'}, {k:'te', l:'Temperatura de entrada', u:'°C'}, {k:'ts', l:'Temperatura de saída', u:'°C'}]},
+  {key:'filtro', sec:'Filtro', t:'Filtro', q:'Pressão diferencial do filtro. Registre a leitura do manômetro.', fields:[{k:'v', l:'Pressão medida', u:'Pa', req:true}, {k:'troca', l:'Pressão de troca (fabricante)', u:'Pa'}]},
+  {key:'amb', sec:'Ambiente', t:'Temperatura e umidade', q:'Condições do ambiente. Adicione a foto do termo-higrômetro e toque nela para registrar a temperatura e a umidade.'},
+  {key:'v_rs', sec:'Elétrica', t:'Tensão R-S', q:'Tensão de alimentação entre as fases R e S.', fields:[NUM('V')]},
+  {key:'v_st', sec:'Elétrica', t:'Tensão S-T', q:'Tensão de alimentação entre as fases S e T.', fields:[NUM('V')]},
+  {key:'v_tr', sec:'Elétrica', t:'Tensão T-R', q:'Tensão de alimentação entre as fases T e R.', fields:[NUM('V')]},
+  {key:'i_r', sec:'Elétrica', t:'Corrente Fase R', q:'Corrente de operação na fase R.', fields:[NUM('A')]},
+  {key:'i_s', sec:'Elétrica', t:'Corrente Fase S', q:'Corrente de operação na fase S.', fields:[NUM('A')]},
+  {key:'i_t', sec:'Elétrica', t:'Corrente Fase T', q:'Corrente de operação na fase T.', fields:[NUM('A')]},
+  {key:'plaqueta', sec:'Identificação', t:'Plaqueta', q:'Registro da plaqueta de identificação do equipamento.'}
 ];
 const ELET = ['v_rs', 'v_st', 'v_tr', 'i_r', 'i_s', 'i_t'];
-const ROTEIROS = {hvac: ['plaqueta', 'vaz', 'filtro', 'amb', ...ELET], split: ['plaqueta', 'plaqueta_cond', 'filtro', 'amb', ...ELET],
-  exaustor: ['plaqueta', 'vaz', ...ELET], tabar: ['vaz', 'amb'], tabhid: ['hid']};
+const SECTIONS = [['vaz', 'Vazão de ar'], ['hid', 'TAB hidrônico'], ['filtro', 'Pressão diferencial do filtro'], ['amb', 'Temperatura e umidade'], ['elet', 'Tensão e corrente'], ['plaqueta', 'Plaqueta do equipamento']];
+const SEL_DEFAULT = {hvac: ['vaz', 'filtro', 'amb', 'plaqueta'], tabhid: ['hid']};
+const ROTEIROS = {hvac: ['vaz', 'hid', 'filtro', 'amb', ...ELET, 'plaqueta']};
 const stepDef = key => HVAC_STEPS.find(s => key === s.key || (s.rep && (key || '').startsWith(s.key + '_')));
+const selOf = p => p?.stepsSel || SEL_DEFAULT[p?.template] || SEL_DEFAULT.hvac;
 function guideSteps(items, p){
-  const out = []; let o = 1;
-  for (const key of ROTEIROS[p?.template] || ROTEIROS.hvac) {
+  const out = [], sel = selOf(p); let o = 1;
+  for (const key of ROTEIROS.hvac) {
     const s = HVAC_STEPS.find(x => x.key === key);
+    if (!sel.includes(ELET.includes(key) ? 'elet' : key)) { o++; continue; }
     if (s.rep) { const n = Math.max(1, items.filter(i => (i.step || '').startsWith(s.key + '_')).length);
       for (let j = 1; j <= n; j++) out.push({...s, key: s.key + '_' + j, t: s.t + ' ' + j, order: o + j / 100}); }
     else out.push({...s, order: o});
@@ -1351,8 +1359,8 @@ function guideBar(p, items){
     <div class="insp-s">${c('filled')} preenchidos${c('partial') ? ` · <b style="color:var(--warn)">${c('partial')} parciais</b>` : ''}${c('na') ? ` · ${c('na')} não se aplica` : ''} · ${c('none')} não iniciados</div></div>
     <div class="ring" style="--p:${pct}"><span>${pct}%</span></div></div>
     <button class="btn primary block" data-act="guide">${I.cam}${done || c('partial') ? 'Continuar inspeção' : 'Iniciar inspeção'}</button>
-    <div class="row" style="margin-top:8px"><button class="btn ghost" data-act="fill" ${fill ? '' : 'disabled'}>${I.edit}Medições${fill ? ` (${fill})` : ''}</button>
-    <button class="btn ghost" data-act="pend-new">${I.flag}Pendência</button></div></div>`;
+    <div class="row" style="margin-top:8px"><button class="btn ghost" data-act="steps-sel">${I.text}Etapas</button><button class="btn ghost" data-act="fill" ${fill ? '' : 'disabled'}>${I.edit}Medições${fill ? ` (${fill})` : ''}</button></div>
+    <div class="row" style="margin-top:8px"><button class="btn ghost" data-act="croqui-new">${I.edit}Croqui</button><button class="btn ghost" data-act="pend-new">${I.flag}Pendência</button></div></div>`;
 }
 function gfieldsHtml(s, fl, ref){
   return (s.fields || []).map(f => {
@@ -1383,8 +1391,9 @@ async function renderGuide(){
     ${state === 'na' ? `<div class="panel"><b>Não se aplica.</b> ${esc(it.naWhy || '')}<br><button class="text-btn" data-act="na-undo" data-key="${s.key}">Desfazer “não se aplica”</button></div>` : `
     ${s.fields ? `<div class="panel">${gfieldsHtml(s, fl, ref)}</div>` : ''}
     <div class="panel"><span class="lb">Foto da medição ${phs.length ? `(${phs.length})` : ''}</span>
-      ${phs.length ? `<div class="gph">${phs.map(ph => `<img src="${phSrc(ph, true)}" alt="" data-act="zoom" data-id="${ph.id}">`).join('')}</div>` : '<p class="hint" style="margin:0 0 8px">Use o botão da câmera abaixo ou escolha da galeria.</p>'}
+      ${phs.length ? `<div class="gph">${phs.map(ph => `<div class="gphi"><img src="${phSrc(ph, true)}" alt="" data-act="phedit" data-id="${ph.id}"><span>${esc(phRead(ph) || 'Toque para registrar')}</span></div>`).join('')}</div>` : '<p class="hint" style="margin:0 0 8px">Use o botão da câmera abaixo ou escolha da galeria.</p>'}
       <button class="text-btn" data-act="gal-step" data-key="${s.key}">${I.img}Escolher da galeria</button></div>
+    ${s.key.startsWith('vaz_') ? await calcHtml(p, it, phs, s.key) : ''}
     <div class="field"><span class="lb">Resultado técnico</span><div class="seg tseg">${['ok', 'anomalia', 'none'].map(v => `<button data-act="gres" data-key="${s.key}" data-v="${v}" aria-pressed="${res === v}">${RES_LABEL[v]}</button>`).join('')}</div></div>
     ${s.rep ? `<button class="btn ghost block" data-act="add-rep" data-base="${s.key.split('_')[0]}" style="margin-bottom:10px">${I.plus}Adicionar outro ponto</button>` : ''}
     <div class="row" style="margin-bottom:10px"><button class="btn ghost" data-act="na" data-key="${s.key}">Não se aplica</button><button class="btn ghost" data-act="pend-new">${I.flag}Pendência</button></div>`}
@@ -1497,6 +1506,149 @@ async function checkUpdate(manual){
     } else if (manual) toast(`Você já está na versão mais recente (${APP_VERSION}).`);
   } catch (e) { if (manual) toast('Não foi possível verificar agora.'); }
 }
+/* ---------- leituras por foto, grelhas e calculadora ---------- */
+const fmtN = (n, d = 2) => Number(n).toLocaleString('pt-BR', {maximumFractionDigits: d});
+function phRead(ph){
+  const r = [ph.rv ? ph.rv + ' ' + (ph.ru || '') : '', ph.rur ? ph.rur + ' %UR' : ''].filter(Boolean).join(' · ');
+  return [ph.note, r].filter(Boolean).join(': ');
+}
+const GRILLE_PRESETS = [
+  {id:'vel', name:'Velocidade × área efetiva', formula:'V*A*K*3600'},
+  {id:'kp', name:'Fator K por pressão', formula:'K*sqrt(P)'},
+  {id:'tropgc', name:'Tropical GC-GCD (grelha contínua)', formula:'V*(C-0.012)*(H-0.012)*3600'}
+];
+async function grilles(){ const c = await getCompany(); return (c.grilles && c.grilles.length) ? c.grilles : [{id:'g-trop', name:'Tropical GC-GCD', formula:'V*(C-0.012)*(H-0.012)*3600', C:'', H:'', A:'', K:'1'}]; }
+function evalFormula(f, vars){
+  const src = String(f || '').replace(/,/g, '.');
+  if (!/^[\d\s.+\-*/()VACHKPsqrt]*$/.test(src)) return null;
+  try { const v = Function('V', 'A', 'C', 'H', 'K', 'P', 'sqrt', '"use strict";return (' + src + ');')(
+    vars.V ?? NaN, vars.A ?? NaN, vars.C ?? NaN, vars.H ?? NaN, vars.K ?? 1, vars.P ?? NaN, Math.sqrt); return isFinite(v) ? v : null; } catch (e) { return null; }
+}
+function calcResult(g, phs){
+  const val = u => phs.filter(p => p.ru === u && numVal(p.rv) !== null).map(p => numVal(p.rv));
+  const ms = val('m/s'), pa = val('Pa'), mh = val('m³/h'), avg = a => a.length ? a.reduce((x, y) => x + y) / a.length : null;
+  const vars = {V: avg(ms), P: avg(pa), A: numVal(g?.A), C: numVal(g?.C), H: numVal(g?.H), K: numVal(g?.K) ?? 1};
+  const q = g ? evalFormula(g.formula, vars) : null;
+  return {q, vars, ms, pa, mh, sum: mh.length ? mh.reduce((x, y) => x + y) : null};
+}
+async function calcHtml(p, it, phs, key){
+  const gs = await grilles(), gid = it?.fields?.grelha || p.lastGrille || gs[0]?.id, g = gs.find(x => x.id === gid);
+  const r = calcResult(g, phs), v = r.vars;
+  const ln = [r.ms.length ? `Média de ${r.ms.length} leitura(s): <b>${fmtN(v.V)} m/s</b>` : '', r.pa.length ? `Pressão média: <b>${fmtN(v.P)} Pa</b>` : ''].filter(Boolean).join(' · ');
+  return `<div class="panel"><span class="lb">Calculadora de vazão</span>
+    <select class="inp" data-act-change="grelha" data-key="${key}">${gs.map(x => `<option value="${x.id}" ${x.id === gid ? 'selected' : ''}>${esc(x.name)}</option>`).join('')}</select>
+    <p class="hint">${g ? `Fórmula: <b>Q = ${esc(g.formula)}</b>${['A', 'C', 'H', 'K'].filter(k => g[k]).map(k => ` · ${k} = ${esc(g[k])}`).join('')}` : ''} <button class="text-btn" data-act="grilles">Editar grelhas</button></p>
+    <p class="hint" style="color:var(--text)">${ln || 'Toque nas fotos e registre as leituras (m/s, Pa ou m³/h).'}</p>
+    ${r.q !== null ? `<div class="calcout">Q = <b>${fmtN(r.q, 0)} m³/h</b></div><div class="row"><button class="btn primary" data-act="calc-use" data-key="${key}" data-val="${Math.round(r.q)}">Usar como vazão medida</button>
+      <button class="btn ghost" data-act="calc-all" data-g="${gid}">Usar esta grelha em todos os pontos</button></div>` : ''}
+    ${r.sum !== null ? `<div class="calcout">Soma das leituras: <b>${fmtN(r.sum, 0)} m³/h</b> <button class="text-btn" data-act="calc-use" data-key="${key}" data-val="${Math.round(r.sum)}">Usar</button></div>` : ''}</div>`;
+}
+function phEditSheet(phId){
+  get('photos', phId).then(ph => {
+    if (!ph) return; const it0 = view.name === 'guide' ? null : null;
+    get('items', ph.itemId).then(it => {
+      const key = it?.step || '', amb = key === 'amb', vaz = key.startsWith('vaz_') || key.startsWith('hid_');
+      const units = vaz ? ['m/s', 'Pa', 'm³/h'] : amb ? ['°C'] : [stepDef(key)?.fields?.[0]?.u || ''];
+      let unit = ph.ru || units[0];
+      const s = openSheet(`<h2>Leitura da foto</h2><img src="${phSrc(ph)}" alt="" style="width:100%;max-height:34vh;object-fit:contain;background:#000;border-radius:12px;margin-bottom:12px">
+        <div class="field"><label class="lb" for="pe-n">Descrição</label><input class="inp" id="pe-n" value="${esc(ph.note || '')}" placeholder="${amb ? 'Ex.: Sala 1203' : 'Ex.: Difusor 1'}"></div>
+        <div class="two"><div class="field"><label class="lb" for="pe-v">${amb ? 'Temperatura (°C)' : 'Valor'}</label><input class="inp" id="pe-v" inputmode="decimal" value="${esc(ph.rv || '')}"></div>
+        ${amb ? `<div class="field"><label class="lb" for="pe-u">Umidade (%UR)</label><input class="inp" id="pe-u" inputmode="decimal" value="${esc(ph.rur || '')}"></div>`
+          : units.length > 1 ? `<div class="field"><span class="lb">Unidade</span><div class="seg tseg">${units.map(u => `<button data-u="${u}" aria-pressed="${u === unit}">${u}</button>`).join('')}</div></div>` : ''}</div>
+        <div class="row"><button class="btn ghost" data-c="zoom">${I.img}Ampliar</button><button class="btn ghost" data-c="sk">${I.edit}Riscar</button><button class="btn ghost" data-c="del">${I.trash}Excluir</button></div>
+        <button class="btn primary block" data-c="ok" style="margin-top:10px">Salvar leitura</button>`);
+      setTimeout(() => $('#pe-v', s)?.focus(), 80);
+      s.addEventListener('click', async ev => {
+        const ub = ev.target.closest('[data-u]'); if (ub) { unit = ub.dataset.u; s.querySelectorAll('[data-u]').forEach(x => x.setAttribute('aria-pressed', x === ub)); return; }
+        const b = ev.target.closest('[data-c]'); if (!b) return;
+        if (b.dataset.c === 'zoom') { zoomPhoto(phSrc(ph)); return; }
+        if (b.dataset.c === 'sk') { closeSheet(); openSketch(ph.id); return; }
+        if (b.dataset.c === 'del') { closeSheet(); const it2 = await get('items', ph.itemId); if (it2) { it2.photoIds = (it2.photoIds || []).filter(x => x !== ph.id); await put('items', it2); } await delMany({photos:[ph.id]}); render(); return; }
+        if (b.dataset.c === 'ok') { ph.note = $('#pe-n', s).value.trim(); ph.rv = $('#pe-v', s).value.trim(); ph.ru = amb ? '°C' : unit; if (amb) ph.rur = $('#pe-u', s).value.trim();
+          await put('photos', ph); closeSheet(); render(); }
+      });
+    });
+  });
+}
+async function grillesSheet(){
+  const c = await getCompany(); let list = (await grilles()).map(x => ({...x}));
+  const draw = () => {
+    const s = openSheet(`<h2>Grelhas e difusores</h2><p class="hint" style="margin:-6px 0 12px">Cadastre cada modelo com a fórmula do fabricante. Letras: V = velocidade média (m/s), P = pressão média (Pa), A = área efetiva (m²), C e H = largura e altura nominais (m), K = constante.</p>
+      ${list.map((g, i) => `<div class="panel" style="padding:12px"><div class="field"><label class="lb">Nome</label><input class="inp" data-i="${i}" data-f="name" value="${esc(g.name)}"></div>
+        <div class="field"><label class="lb">Fórmula (Q em m³/h)</label><input class="inp" data-i="${i}" data-f="formula" value="${esc(g.formula)}"></div>
+        <div class="two">${['A', 'C', 'H', 'K'].map(k => `<div class="field"><label class="lb">${k}</label><input class="inp" inputmode="decimal" data-i="${i}" data-f="${k}" value="${esc(g[k] || '')}"></div>`).join('')}</div>
+        <button class="text-btn" data-rm="${i}">${I.trash}Remover</button></div>`).join('')}
+      <div class="field"><label class="lb">Adicionar a partir de um modelo</label><select class="inp" id="gr-new"><option value="">Escolha…</option>${GRILLE_PRESETS.map(x => `<option value="${x.id}">${esc(x.name)}</option>`).join('')}</select></div>
+      <button class="btn primary block" data-c="save">Salvar grelhas</button>`);
+    const sync = () => s.querySelectorAll('[data-f]').forEach(el => { list[+el.dataset.i][el.dataset.f] = el.value.trim(); });
+    s.querySelector('#gr-new').addEventListener('change', e => { const pr = GRILLE_PRESETS.find(x => x.id === e.target.value); if (!pr) return; sync();
+      list.push({id: uid(), name: pr.name, formula: pr.formula, A:'', C:'', H:'', K:'1'}); closeSheet(); draw(); });
+    s.addEventListener('click', async ev => {
+      const rm = ev.target.closest('[data-rm]'); if (rm) { sync(); list.splice(+rm.dataset.rm, 1); closeSheet(); draw(); return; }
+      if (!ev.target.closest('[data-c="save"]')) return; sync();
+      await setSetting('company', {...c, grilles: list.filter(g => g.name && g.formula)}); closeSheet(); toast('Grelhas salvas.'); render();
+    });
+  };
+  draw();
+}
+function stepsSheet(p, then){
+  const sel = new Set(selOf(p));
+  const s = openSheet(`<h2>Etapas da inspeção</h2><p class="hint" style="margin:-6px 0 12px">Marque o que será feito neste equipamento. Você pode mudar depois, por exemplo para incluir tensão e corrente em outra visita.</p>
+    ${SECTIONS.map(([k, l]) => `<label class="check"><input type="checkbox" value="${k}" ${sel.has(k) ? 'checked' : ''}>${l}</label>`).join('')}
+    <button class="btn primary block" data-c="ok">Confirmar etapas</button>`);
+  s.addEventListener('click', async ev => { if (!ev.target.closest('[data-c="ok"]')) return;
+    p.stepsSel = [...s.querySelectorAll('input:checked')].map(x => x.value); if (!p.stepsSel.length) p.stepsSel = ['vaz'];
+    await put('projects', p); closeSheet(); then ? then() : render(); });
+}
+/* ---------- plantas do projeto e croqui ---------- */
+let pdfLib = null;
+async function loadPdfJs(){
+  if (pdfLib) return pdfLib;
+  await new Promise((res, rej) => { const sc = document.createElement('script'); sc.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js'; sc.onload = res; sc.onerror = rej; document.head.appendChild(sc); });
+  window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+  return pdfLib = window.pdfjsLib;
+}
+async function plantFromFile(file, fid){
+  toast('Importando a planta…', 60000);
+  let d, w, h;
+  if (/pdf$/i.test(file.type) || /\.pdf$/i.test(file.name)) {
+    const lib = await loadPdfJs(); const pdf = await lib.getDocument({data: await file.arrayBuffer()}).promise;
+    let n = 1; if (pdf.numPages > 1) { const v = await new Promise(r => promptSheet('Página da planta', `O PDF tem ${pdf.numPages} páginas. Qual usar?`, '1', 'Usar', r)); n = Math.min(pdf.numPages, Math.max(1, parseInt(v) || 1)); }
+    const pg = await pdf.getPage(n), vp0 = pg.getViewport({scale: 1}), sc = Math.min(4, 2200 / Math.max(vp0.width, vp0.height)), vp = pg.getViewport({scale: sc});
+    const c = document.createElement('canvas'); c.width = vp.width; c.height = vp.height; const x = c.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, c.width, c.height);
+    await pg.render({canvasContext: x, viewport: vp}).promise; d = c.toDataURL('image/jpeg', .82); w = c.width; h = c.height;
+  } else { const {make} = await processImage(file); const r = await make(2200, .82); d = r.d; w = r.w; h = r.h; }
+  const t = await new Promise(r => { const i = new Image(); i.onload = () => r(i); i.src = d; });
+  await put('photos', {id: uid(), itemId:'plant', projectId:'folder:' + fid, src: d, tsrc: await thumbOf(t), srcV: uid(), w, h, takenAt: Date.now(), note: file.name.replace(/\.[^.]+$/, '')});
+  hideToast(); toast('Planta adicionada.');
+}
+async function plantsUp(fid){ const folders = await getAll('folders'); const ids = fid ? pathTo(fid, folders).map(f => f.id) : [];
+  let out = []; for (const id of ids.reverse()) out = out.concat(await byIdx('photos', 'projectId', 'folder:' + id)); return out; }
+let plantFolder = null;
+async function plantsSheet(fid){
+  const ps = await byIdx('photos', 'projectId', 'folder:' + fid);
+  const s = openSheet(`<h2>Plantas do projeto</h2><p class="hint" style="margin:-6px 0 12px">PDF ou imagem. Ficam disponíveis para croqui em todos os equipamentos desta pasta.</p>
+    <div class="gph">${ps.map(p => `<div class="gphi"><img src="${phSrc(p, true)}" alt=""><span>${esc(p.note || '')}</span><button class="text-btn" data-rm="${p.id}">${I.trash}</button></div>`).join('') || '<p class="hint">Nenhuma planta ainda.</p>'}</div>
+    <button class="btn primary block" data-c="add">${I.upload}Adicionar planta (PDF ou imagem)</button>`);
+  s.addEventListener('click', async ev => {
+    const rm = ev.target.closest('[data-rm]'); if (rm) { await delMany({photos:[rm.dataset.rm]}); closeSheet(); plantsSheet(fid); return; }
+    if (ev.target.closest('[data-c="add"]')) { plantFolder = fid; const i = $('#in-plant'); i.value = ''; i.click(); }
+  });
+}
+async function croquiPick(target){ // target: {pid} novo item croqui | {itemId} adiciona a uma pendência
+  const pid = target.pid || (await get('items', target.itemId)).projectId, p = await get('projects', pid);
+  const ps = await plantsUp(pid0(p));
+  if (!ps.length) { toast('Nenhuma planta nesta obra. Em Pastas, toque nos ⋮ da obra → Plantas do projeto.', 5000); return; }
+  const s = openSheet(`<h2>Escolha a planta</h2><div class="gph">${ps.map(x => `<div class="gphi" data-pl="${x.id}"><img src="${phSrc(x, true)}" alt=""><span>${esc(x.note || '')}</span></div>`).join('')}</div>`);
+  s.addEventListener('click', async ev => { const el = ev.target.closest('[data-pl]'); if (!el) return;
+    const pl = await get('photos', el.dataset.pl); let it;
+    if (target.itemId) it = await get('items', target.itemId);
+    else { it = await createItem(pid, {title: 'Croqui', desc: ''}); it.kind = 'croqui'; it.order = 900; }
+    const ph = {id: uid(), itemId: it.id, projectId: pid, src: pl.src, tsrc: pl.tsrc, srcV: uid(), w: pl.w, h: pl.h, takenAt: Date.now(), note: 'Croqui · ' + (pl.note || '')};
+    await put('photos', ph); it.photoIds = [...(it.photoIds || []), ph.id]; await put('items', it);
+    closeSheet(); await render(); openSketch(ph.id); });
+}
+
 /* ---------- relatório novo (layout aprovado) ---------- */
 async function collectReport(ids){
   const folders = await getAll('folders'); const eqs = [];
@@ -1523,7 +1675,7 @@ async function makeReport(o){
     const {jsPDF} = window.jspdf; const doc = new jsPDF({unit:'mm', format:'a4', compress:true});
     const W = 210, H = 297, M = 14, CW = W - 2 * M;
     const NAVY = [15, 39, 71], AMB = [245, 179, 1], MUT = [90, 101, 115], LN = [223, 227, 232], RED = [211, 58, 44], GRN = [31, 157, 87], ORG = [217, 119, 6], BLU = [29, 92, 255];
-    const company = await getCompany(), eqs = await collectReport(o.ids);
+    const company = await getCompany(), eqs = await collectReport(o.ids), GR = await grilles();
     if (!eqs.length) { hideToast(); toast('Nenhum equipamento para incluir.'); return; }
     const img = async ph => { try { return ph.src || await blobToDataURL(ph.blob); } catch (e) { return null; } };
     const phOf = (e, it) => (it.photoIds || []).map(id => e.phs.get(id)).filter(Boolean);
@@ -1645,6 +1797,8 @@ async function makeReport(o){
               T((d > 0 ? '+' : '') + d.toFixed(1).replace('.', ',') + '%', M + 134, y, {s:9.5, b:true, c});
               const bx = M + 152, bw = 26; doc.setFillColor(238, 241, 244); doc.roundedRect(bx, y - 2.6, bw, 2.4, 1.2, 1.2, 'F'); const w = Math.min(Math.abs(d), 20) / 20 * bw / 2;
               doc.setFillColor(...c); doc.rect(d >= 0 ? bx + bw / 2 : bx + bw / 2 - w, y - 2.6, w, 2.4, 'F'); doc.setDrawColor(150); doc.line(bx + bw / 2, y - 3.4, bx + bw / 2, y + .6); }
+            const rd = phOf(e, it).filter(q => q.rv).map(q => (q.note ? q.note + ': ' : '') + q.rv + ' ' + (q.ru || '')), gg = GR.find(x => x.id === f.grelha);
+            if (rd.length || gg) { T([gg ? 'Grelha: ' + gg.name + ' (Q = ' + gg.formula + ')' : '', rd.length ? 'Leituras: ' + rd.join(' · ') : ''].filter(Boolean).join('   '), M + 2, y + 5, {s:7.5, c:MUT, w: CW - 4, n:2}); y += 6; }
             doc.setDrawColor(...LN); doc.line(M, y + 2.5, W - M, y + 2.5); y += 7; });
           y += 3;
         }
@@ -1667,7 +1821,9 @@ async function makeReport(o){
             doc.setFillColor(...c); doc.roundedRect(M, y + 3, 90 * p / 100, 3, 1.5, 1.5, 'F'); T(`${Math.round(p)}% saturado`, M + 94, y + 5.5, {s:9, b:true, c}); }
           y += 14; }
         if (am && (phOf(e, am).length || am.fields?.v)) { need(18); y = sec('Ambiente', y); const f = am.fields || {};
-          T(f.v || f.ur ? `Temperatura: ${f.v || '—'} °C · Umidade: ${f.ur || '—'} %` : 'Condições: ' + lab(am), M, y, {s:10}); y += 10; }
+          const rds = phOf(e, am).filter(q => q.rv || q.rur).map(q => `${q.note ? q.note + ': ' : ''}${q.rv || '—'} °C · ${q.rur || '—'} %UR (foto ${labels.get(q.id)})`);
+          if (!rds.length) rds.push(f.v || f.ur ? `Temperatura: ${f.v || '—'} °C · Umidade: ${f.ur || '—'} %` : 'Condições: ' + lab(am));
+          rds.forEach(t => { need(8); T(t, M, y, {s:10}); y += 5.5; }); y += 4; }
         const el = ['v_rs', 'v_st', 'v_tr', 'i_r', 'i_s', 'i_t'].map(byStep).filter(i => i && (phOf(e, i).length || i.fields?.v));
         if (el.length) { need(16 + el.length * 7); y = sec('Elétrica do motor', y);
           [['Medição', 0], ['Valor', 70], ['Foto', 110]].forEach(([t, dx]) => T(t.toUpperCase(), M + 2 + dx, y, {s:7.5, b:true, c:MUT})); doc.line(M, y + 2, W - M, y + 2); y += 7;
@@ -1679,8 +1835,11 @@ async function makeReport(o){
             T(`Desequilíbrio de tensão: ${dv.toFixed(1).replace('.', ',')}%`, M, y + 1, {s:9, b:true, c: dv <= 2 ? GRN : RED}); y += 6; }
         }
       }
+      for (const it of its.filter(i => i.kind === 'croqui')) for (const ph of phOf(e, it)) {
+        y = page(`${hdr} · Croqui`, hr); T(ph.note || 'Croqui', M, y, {s:11.5, b:true, c:NAVY}); y += 4;
+        doc.setFillColor(238, 241, 244); doc.rect(M, y, CW, H - y - 24, 'F'); fit(await img(ph), M, y, CW, H - y - 24, ph.w, ph.h); }
       /* fotos do equipamento: 4 por página */
-      const cards = []; its.forEach(it => phOf(e, it).forEach(ph => cards.push({it, ph})));
+      const cards = []; its.filter(i => i.kind !== 'croqui').forEach(it => phOf(e, it).forEach(ph => cards.push({it, ph})));
       if (cards.length) {
         const cw = (CW - 6) / 2, chh = 62;
         let slot = 4;
@@ -1691,7 +1850,7 @@ async function makeReport(o){
           fit(await img(ph), x, yy, cw, chh, ph.w, ph.h);
           const pw = pill(labels.get(ph.id), x + 3, yy + chh + 6, NAVY);
           T(it.title || '', x + 5 + pw, yy + chh + 6, {s:9.5, b:true, w: cw - pw - 8, n:1});
-          const extra = [ph.note, itemSummary(e.p, it)].filter(Boolean).join(' · ');
+          const extra = [phRead(ph), itemSummary(e.p, it)].filter(Boolean).join(' · ');
           if (extra) T(extra, x + 3, yy + chh + 12, {s:8.5, c:MUT, w: cw - 6, n:1});
           slot++;
         }
@@ -2188,6 +2347,7 @@ document.addEventListener('click', async e => {
       const f = await get('folders', id);
       menu(f.name, [
         {icon:'pdf', label:'Gerar relatório da pasta (tudo junto)', run: () => compileSheet(f.id)},
+        {icon:'img', label:'Plantas do projeto (para croqui)', run: () => plantsSheet(f.id)},
         {icon:'img', label: f.logo ? 'Trocar logo do cliente' : 'Logo do cliente (aparece no relatório)', run: () => { flogoTarget = f.id; $('#in-flogo').value = ''; $('#in-flogo').click(); }},
         ...(f.logo ? [{icon:'trash', label:'Remover logo do cliente', run: async () => { delete f.logo; await put('folders', f); toast('Logo removido.'); }}] : []),
         {icon:'edit', label:'Renomear pasta', run: () => promptSheet('Renomear pasta', 'Nome da pasta', f.name, 'Salvar', async v => { f.name = v; await put('folders', f); render(); })},
@@ -2220,7 +2380,15 @@ document.addEventListener('click', async e => {
     case 'gal-add': camTarget = view.id; $('#in-gal').value = ''; $('#in-gal').click(); break;
     case 'version': checkUpdate(true); break;
     case 'sketch': openSketch(id); break;
-    case 'guide': { const p0 = await get('projects', view.id), its = await byIdx('items', 'projectId', view.id), st = guideSteps(its, p0); const f = st.findIndex(s => !stepDone(its.find(i => i.step === s.key)));
+    case 'steps-sel': stepsSheet(await get('projects', view.id)); break;
+    case 'croqui-new': croquiPick({pid: view.id}); break;
+    case 'croqui-item': croquiPick({itemId: id}); break;
+    case 'phedit': phEditSheet(id); break;
+    case 'grilles': grillesSheet(); break;
+    case 'calc-use': { const it = await ensureStepItem(view.id, b.dataset.key); it.fields = {...(it.fields || {}), v: b.dataset.val}; await put('items', it); toast('Vazão medida preenchida.'); render(); break; }
+    case 'calc-all': { for (const it of (await byIdx('items', 'projectId', view.id)).filter(i => (i.step || '').startsWith('vaz_'))) { it.fields = {...(it.fields || {}), grelha: b.dataset.g}; await put('items', it); } toast('Grelha aplicada a todos os pontos.'); render(); break; }
+    case 'guide': { const p0 = await get('projects', view.id); if (!p0.stepsSel) { stepsSheet(p0, () => document.querySelector('[data-act=guide]')?.click()); break; }
+      const its = await byIdx('items', 'projectId', view.id), st = guideSteps(its, p0); const f = st.findIndex(s => !stepDone(its.find(i => i.step === s.key)));
       go({name:'guide', id: view.id, step: f < 0 ? 0 : f}); break; }
     case 'na': { await flushGuideFields(); const key = b.dataset.key;
       promptSheet('Não se aplica', 'Justificativa (opcional)', '', 'Confirmar', async v => { const it = await ensureStepItem(view.id, key); it.na = true; it.naWhy = v; it.updatedAt = Date.now(); await put('items', it); view.step = (view.step || 0) + 1; render(); }, true); break; }
@@ -2278,6 +2446,11 @@ $('#in-cam').addEventListener('change', e => onPhotos([...e.target.files]));
 $('#in-gal').addEventListener('change', e => onPhotos([...e.target.files]));
 $('#in-sheet').addEventListener('change', e => { const f = e.target.files[0]; if (f) handleSheetFile(f); });
 let flogoTarget = null;
+$('#in-plant').addEventListener('change', async e => { const f = e.target.files[0]; if (!f || !plantFolder) return;
+  try { closeSheet(); await plantFromFile(f, plantFolder); plantsSheet(plantFolder); } catch (er) { hideToast(); toast('Não foi possível importar: ' + er.message, 4000); } });
+document.addEventListener('change', async e => { const el = e.target; if (!el.dataset || el.dataset.actChange !== 'grelha') return;
+  const it = await ensureStepItem(view.id, el.dataset.key); it.fields = {...(it.fields || {}), grelha: el.value}; await put('items', it);
+  const p = await get('projects', view.id); p.lastGrille = el.value; await put('projects', p); render(); });
 $('#in-flogo').addEventListener('change', async e => { const file = e.target.files[0]; if (!file || !flogoTarget) return;
   const {make} = await processImage(file); const r = await make(600, 1, 'image/png'); const f = await get('folders', flogoTarget);
   f.logo = {d: r.d, w: r.w, h: r.h}; await put('folders', f); toast('Logo do cliente salvo.'); });
