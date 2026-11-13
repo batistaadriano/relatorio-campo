@@ -276,6 +276,7 @@ textarea.inp{min-height:120px;resize:vertical;line-height:1.5}
 .gphi{flex:none;width:110px;position:relative}.gphi img{width:110px;height:92px;object-fit:cover;border-radius:12px;display:block}
 .gphi span{display:block;font-size:11.5px;line-height:1.3;color:var(--muted);margin-top:3px;max-height:3em;overflow:hidden}
 .gphi .text-btn{min-height:30px;padding:0}.calcout{font-size:16px;margin:8px 0}
+.vblk-t{font-weight:700;font-size:15px;margin:16px 2px 8px;color:var(--accent-text);text-transform:uppercase;letter-spacing:.04em}
 .hidden{display:none!important}
 .ptitle{font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--accent-text);margin:0 0 12px}
 .tseg{grid-template-columns:repeat(auto-fit,minmax(90px,1fr))}
@@ -385,7 +386,7 @@ async function os(name, mode = 'readonly'){ const d = await idb(); return d.tran
 const getAll = async n => P((await os(n)).getAll());
 const byIdx = async (n, idx, v) => P((await os(n)).index(idx).getAll(v));
 const get = async (n, k) => P((await os(n)).get(k));
-const APP_VERSION = 10, APP_DATE = '11/11/2026';
+const APP_VERSION = 11, APP_DATE = '11/11/2026';
 const SYNCED = ['folders', 'projects', 'items', 'photos'];
 const rawPut = async (n, v) => P((await os(n, 'readwrite')).put(v));
 const put = async (n, v) => { if (SYNCED.includes(n) && v) v.mt = Date.now(); let r; try { r = await rawPut(n, v); } catch (e) { setSaveState('err'); throw e; } cloudPush(n, [v]); if (n !== 'settings') setSaveState('ok'); return r; };
@@ -1322,6 +1323,8 @@ function guideSteps(items, p){
   for (const key of ROTEIROS.hvac) {
     const s = HVAC_STEPS.find(x => x.key === key);
     if (!sel.includes(ELET.includes(key) ? 'elet' : key)) { o++; continue; }
+    if (s.key === 'vaz') { const n = Math.max(p?.vazN || 1, ...items.map(i => vazParse(i.step)?.g || 0));
+      for (let g = 1; g <= n; g++) out.push({...s, key: 'vaz_' + g, group:true, g, t: 'Vazão · ' + (p?.vazAmb?.[g] || 'ambiente ' + g), order: o + g / 100}); o++; continue; }
     if (s.rep) { const n = Math.max(1, items.filter(i => (i.step || '').startsWith(s.key + '_')).length);
       for (let j = 1; j <= n; j++) out.push({...s, key: s.key + '_' + j, t: s.t + ' ' + j, order: o + j / 100}); }
     else out.push({...s, order: o});
@@ -1339,20 +1342,33 @@ function stepState(it){
   return has || req.some(x => String(f[x.k] || '').trim()) ? 'partial' : 'none';
 }
 const stepDone = it => ['filled', 'na'].includes(stepState(it));
+const VZT = {ins:'Insuflamento', ret:'Retorno', exa:'Exaustão', ext:'Ar externo'};
+function vazParse(key){ const m = /^vaz_(\d+)(?:_(ins|ret|exa|ext)_(\d+))?$/.exec(key || ''); return m ? {g: +m[1], t: m[2] || null, n: +(m[3] || 1)} : null; }
+const vazMembers = (items, g) => items.filter(i => { const v = vazParse(i.step); return v && v.g === g; });
+function stOf(s, items){
+  if (!s.group) return stepState(items.find(i => i.step === s.key));
+  const ms = vazMembers(items, s.g).map(stepState).filter(x => x !== 'none');
+  if (!ms.length) return 'none'; return ms.every(x => x === 'filled' || x === 'na') ? 'filled' : 'partial';
+}
+const doneOf = (s, items) => ['filled', 'na'].includes(stOf(s, items));
+function vazLabel(p, it){ const v = vazParse(it.step); if (!v) return it.title; return `${p?.vazAmb?.[v.g] || 'Ambiente ' + v.g} · ${VZT[v.t] || it.fields?.tipo || ''} ${v.t ? v.n : ''}`.trim(); }
 const ST_LABEL = {none:'Não iniciado', partial:'Registro parcial', filled:'Preenchido', na:'Não se aplica'};
 const RES_LABEL = {ok:'Conforme', anomalia:'Não conforme', none:'Não avaliado'};
 async function ensureStepItem(pid, key){
   const items = await byIdx('items', 'projectId', pid);
   let it = items.find(x => x.step === key); if (it) return it;
   const p = await get('projects', pid);
-  const s = guideSteps(items.concat([{step: key}]), p).find(x => x.key === key) || {t: key, order: 500};
+  const vz = vazParse(key);
+  const s = vz && vz.t ? {t: `${VZT[vz.t]} ${vz.n}`, order: 1 + vz.g / 100 + Object.keys(VZT).indexOf(vz.t) / 1000 + vz.n / 100000}
+    : guideSteps(items.concat([{step: key}]), p).find(x => x.key === key) || {t: key, order: 500};
   it = await createItem(pid, {title: s.t, desc: ''});
-  Object.assign(it, {step: key, kind:'step', order: s.order}); await put('items', it); return it;
+  Object.assign(it, {step: key, kind:'step', order: s.order}); if (vz && vz.t) it.fields = {tipo: VZT[vz.t], grelha: p.lastGrille || undefined};
+  await put('items', it); return it;
 }
 const needsValue = i => i.kind === 'step' && !i.na && (i.photoIds || []).length && (stepDef(i.step)?.fields || []).some(f => f.req && f.u && !String(i.fields?.[f.k] || '').trim());
 function guideBar(p, items){
   if (!tplOf(p).guided) return '';
-  const st = guideSteps(items, p), states = st.map(s => stepState(items.find(i => i.step === s.key)));
+  const st = guideSteps(items, p), states = st.map(s => stOf(s, items));
   const c = k => states.filter(x => x === k).length, done = c('filled') + c('na');
   const fill = items.filter(needsValue).length, pct = Math.round(done / st.length * 100);
   return `<div class="insp"><div class="insp-top"><div><div class="insp-t">Inspeção · ${esc(tplOf(p).name)}</div>
@@ -1375,9 +1391,10 @@ async function renderGuide(){
   curFolderId = pid0(p);
   const items = await byIdx('items', 'projectId', p.id), st = guideSteps(items, p);
   const i = Math.max(0, Math.min(st.length - 1, view.step || 0)), s = st[i];
+  if (s.group) return renderVazGroup(p, items, st, i, s);
   const it = items.find(x => x.step === s.key), fl = (it && it.fields) || {}, state = stepState(it);
   const phs = it ? (await Promise.all((it.photoIds || []).map(id => get('photos', id)))).filter(Boolean) : [];
-  const done = st.filter(x => stepDone(items.find(y => y.step === x.key))).length;
+  const done = st.filter(x => doneOf(x, items)).length;
   const ref = `data-key="${s.key}"`, res = it?.status === 'ok' || it?.status === 'anomalia' ? it.status : 'none';
   const last = i === st.length - 1;
   app.innerHTML = `
@@ -1458,18 +1475,20 @@ async function reviewHtml(ids){
     pends += items.filter(i => i.kind === 'pend').length;
     if (!tplOf(p).guided) continue;
     for (const s of guideSteps(items, p)) {
-      const it = items.find(i => i.step === s.key), st = stepState(it);
+      const it = s.group ? vazMembers(items, s.g).find(x => stepState(x) === 'partial') : items.find(i => i.step === s.key), st = stOf(s, items);
       if (st === 'none') { none++; if (lines.length < 8) lines.push(`${p.name} · ${s.t}: não iniciado`); }
       if (st === 'partial') { partial++; const f = !(it.photoIds || []).length;
         if (f) missPh++; if (lines.length < 8) lines.push(`${p.name} · ${s.t}: ${f ? 'falta a foto' : 'faltam valores'}`); }
       if (it && needsValue(it)) need++;
     }
   }
+  let miss = 0; for (const pid of ids) miss += (await byIdx('photos', 'projectId', pid)).filter(x => !x.src && !x.blob).length;
   const ok = !none && !partial;
   return `<div class="panel" style="margin-bottom:14px;${ok ? '' : 'border:1px solid var(--warn)'}"><b>${ok ? 'Tudo preenchido' : 'Revisão antes de gerar'}</b>
     <div class="hint" style="margin:6px 0">${none} não iniciados · ${partial} parciais (${missPh} sem foto, ${need} sem valor) · ${pends} pendências registradas</div>
     ${lines.map(l => `<div style="font-size:13.5px;padding:2px 0">• ${esc(l)}</div>`).join('')}${(none + partial) > lines.length ? '<div class="hint">e mais…</div>' : ''}
-    ${ok ? '' : '<p class="hint">Você pode gerar assim mesmo: o que faltar sai como “não iniciado” ou “ver foto”.</p>'}</div>`;
+    ${ok ? '' : '<p class="hint">Você pode gerar assim mesmo: o que faltar sai como “não iniciado” ou “ver foto”.</p>'}
+    ${miss ? `<p class="hint" style="color:var(--warn)"><b>${miss} ${miss === 1 ? 'foto ainda não baixada' : 'fotos ainda não baixadas'}</b> da nuvem neste aparelho.</p><button class="btn ghost block" data-dl='${JSON.stringify(ids)}'>${I.save}Baixar fotos (${miss})</button>` : ''}</div>`;
 }
 /* estado de salvamento sempre visível */
 let saveState = 'ok';
@@ -1525,7 +1544,7 @@ function evalFormula(f, vars){
     vars.V ?? NaN, vars.A ?? NaN, vars.C ?? NaN, vars.H ?? NaN, vars.K ?? 1, vars.P ?? NaN, Math.sqrt); return isFinite(v) ? v : null; } catch (e) { return null; }
 }
 function calcResult(g, phs){
-  const val = u => phs.filter(p => p.ru === u && numVal(p.rv) !== null).map(p => numVal(p.rv));
+  const val = u => phs.filter(p => p.ru === u && numVal(p.rv) !== null).map(p => Math.abs(numVal(p.rv)));
   const ms = val('m/s'), pa = val('Pa'), mh = val('m³/h'), avg = a => a.length ? a.reduce((x, y) => x + y) / a.length : null;
   const vars = {V: avg(ms), P: avg(pa), A: numVal(g?.A), C: numVal(g?.C), H: numVal(g?.H), K: numVal(g?.K) ?? 1};
   const q = g ? evalFormula(g.formula, vars) : null;
@@ -1649,6 +1668,67 @@ async function croquiPick(target){ // target: {pid} novo item croqui | {itemId} 
     closeSheet(); await render(); openSketch(ph.id); });
 }
 
+
+/* ---------- vazão por ambiente (insuflamento, retorno, exaustão, ar externo) ---------- */
+async function renderVazGroup(p, items, st, i, s){
+  const g = s.g, mem = vazMembers(items, g), types = ['ins', 'ret', ...['exa', 'ext'].filter(t => mem.some(m => vazParse(m.step).t === t) || (view.addT || []).includes(g + t))];
+  const done = st.filter(x => doneOf(x, items)).length, state = stOf(s, items), last = i === st.length - 1;
+  let html = '';
+  for (const t of types) {
+    const ns = mem.filter(m => vazParse(m.step).t === t).map(m => vazParse(m.step).n); const cnt = Math.max(1, ...ns, view['n' + g + t] || 0);
+    html += `<div class="vblk"><div class="vblk-t">${VZT[t]}</div>`;
+    for (let n = 1; n <= cnt; n++) {
+      const key = `vaz_${g}_${t}_${n}`, it = mem.find(m => m.step === key), fl = it?.fields || {};
+      const phs = it ? (await Promise.all((it.photoIds || []).map(id => get('photos', id)))).filter(Boolean) : [], ref = `data-key="${key}"`;
+      html += `<div class="panel">${cnt > 1 ? `<span class="lb">Medição ${n} · <span class="st-${stepState(it)}">${ST_LABEL[stepState(it)]}</span></span>` : `<span class="lb st-${stepState(it)}">${ST_LABEL[stepState(it)]}</span>`}
+        <div class="two"><div class="field"><label class="lb">Vazão de projeto (m³/h)</label><input class="inp gf" ${ref} data-k="proj" inputmode="decimal" value="${esc(fl.proj || '')}" placeholder="Pode preencher depois"></div>
+        <div class="field"><label class="lb">Vazão medida (m³/h)</label><input class="inp gf" ${ref} data-k="v" inputmode="decimal" value="${esc(fl.v || '')}" placeholder="Pode preencher depois"></div></div>
+        <span class="lb">Fotos das leituras ${phs.length ? `(${phs.length})` : ''}</span>
+        ${phs.length ? `<div class="gph">${phs.map(ph => `<div class="gphi"><img src="${phSrc(ph, true)}" alt="" data-act="phedit" data-id="${ph.id}"><span>${esc(phRead(ph) || 'Toque para registrar')}</span></div>`).join('')}</div>` : ''}
+        <div class="row"><button class="btn ghost" data-act="cam-step" ${ref}>${I.cam}Tirar foto</button><button class="btn ghost" data-act="gal-step" ${ref}>${I.img}Galeria</button></div></div>
+        ${phs.length ? await calcHtml(p, it, phs, key) : ''}`;
+    }
+    html += `<button class="btn ghost block" data-act="add-meas" data-g="${g}" data-t="${t}" style="margin-bottom:12px">${I.plus}Mais uma medição de ${VZT[t].toLowerCase()}</button></div>`;
+  }
+  const extra = ['exa', 'ext'].filter(t => !types.includes(t));
+  app.innerHTML = `
+  <header class="top"><button class="icon-btn" data-act="open-project" data-id="${p.id}" aria-label="Voltar">${I.back}</button>
+    <h1>${esc(p.name)} · ${esc(s.t)}<span class="sub">Passo ${i + 1} de ${st.length} · Vazão de ar</span></h1>
+    <button class="icon-btn" data-act="pend-new" aria-label="Registrar pendência">${I.flag}</button></header>
+  <main>
+    <div class="gprog"><i style="width:${Math.round(done / st.length * 100)}%"></i></div>
+    <div class="gsec">Vazão de ar · <span class="st-${state}">${ST_LABEL[state]}</span></div><div class="savechip" data-save></div>
+    <div class="gq">Medição de vazão por ambiente. Registre projeto, medida e as fotos das leituras de cada terminal. Leituras negativas (retorno, exaustão) são aceitas: o cálculo usa o valor absoluto.</div>
+    <div class="field"><label class="lb">Ambiente</label><input class="inp ambname" data-g="${g}" value="${esc(p.vazAmb?.[g] || '')}" placeholder="Ex.: Sala 1203 / Recepção"></div>
+    ${html}
+    ${extra.length ? `<div class="row" style="margin-bottom:10px">${extra.map(t => `<button class="btn ghost" data-act="add-type" data-g="${g}" data-t="${t}">${I.plus}${VZT[t]}</button>`).join('')}</div>` : ''}
+    <button class="btn ghost block" data-act="add-amb" style="margin-bottom:10px">${I.plus}Adicionar outro ambiente</button>
+    <button class="btn ghost block" data-act="pend-new">${I.flag}Registrar pendência</button>
+  </main>
+  <nav class="bottom"><div class="bottom-inner">
+    <div class="side"><button class="text-btn" data-act="gstep" data-d="-1" ${i ? '' : 'disabled'}>${I.left}Anterior</button></div>
+    <button class="fab" data-act="cam-step" data-key="vaz_${g}_ins_1" aria-label="Tirar foto do insuflamento">${I.cam}</button>
+    <div class="side right">${last ? `<button class="text-btn" data-act="review" data-id="${p.id}">Revisar${I.right}</button>`
+      : `<button class="text-btn" data-act="gstep" data-d="1">${state === 'filled' ? 'Próximo' : 'Preencher depois'}${I.right}</button>`}</div>
+  </div></nav>`;
+  setSaveState();
+}
+async function downloadPhotos(ids, btn){
+  if (!cloud.on || !fb) { if (btn) toast('Entre na equipe na nuvem para baixar as fotos.'); return 0; }
+  if (!navigator.onLine) { if (btn) toast('Sem internet para baixar as fotos.'); return 0; }
+  const miss = []; for (const pid of ids) for (const ph of await byIdx('photos', 'projectId', pid)) if (!ph.src && !ph.blob) miss.push(ph);
+  let k = 0;
+  for (const ph of miss) {
+    try { const d = await fb.F.getDoc(oref('blobs', ph.id)); if (d.exists()) { ph.src = d.data().src; await rawPut('photos', ph); } } catch (e) {}
+    k++; if (btn) { btn.disabled = true; btn.textContent = `Baixando fotos… ${k} de ${miss.length}`; } else toast(`Baixando fotos da nuvem… ${k} de ${miss.length}`, 8000);
+  }
+  if (btn) btn.textContent = 'Fotos baixadas';
+  return miss.length;
+}
+document.addEventListener('click', e => { const b = e.target.closest('[data-dl]'); if (b && !b.disabled) downloadPhotos(JSON.parse(b.dataset.dl), b); });
+let ambT;
+document.addEventListener('input', e => { if (!e.target.classList.contains('ambname')) return; setSaveState('saving'); clearTimeout(ambT);
+  const g = e.target.dataset.g, v = e.target.value; ambT = setTimeout(async () => { const p = await get('projects', view.id); p.vazAmb = {...(p.vazAmb || {}), [g]: v}; await put('projects', p); }, 400); });
 /* ---------- relatório novo (layout aprovado) ---------- */
 async function collectReport(ids){
   const folders = await getAll('folders'); const eqs = [];
@@ -1672,12 +1752,13 @@ async function makeReport(o){
   if (!window.jspdf) { toast('O gerador de PDF não carregou. Feche e abra o app de novo.'); return; }
   toast('Montando o relatório…', 180000);
   try {
+    await downloadPhotos(o.ids).catch(() => 0);
     const {jsPDF} = window.jspdf; const doc = new jsPDF({unit:'mm', format:'a4', compress:true});
     const W = 210, H = 297, M = 14, CW = W - 2 * M;
     const NAVY = [15, 39, 71], AMB = [245, 179, 1], MUT = [90, 101, 115], LN = [223, 227, 232], RED = [211, 58, 44], GRN = [31, 157, 87], ORG = [217, 119, 6], BLU = [29, 92, 255];
     const company = await getCompany(), eqs = await collectReport(o.ids), GR = await grilles();
     if (!eqs.length) { hideToast(); toast('Nenhum equipamento para incluir.'); return; }
-    const img = async ph => { try { return ph.src || await blobToDataURL(ph.blob); } catch (e) { return null; } };
+    const img = async ph => { try { return ph.src || (ph.blob ? await blobToDataURL(ph.blob) : null) || ph.tsrc || null; } catch (e) { return ph.tsrc || null; } };
     const phOf = (e, it) => (it.photoIds || []).map(id => e.phs.get(id)).filter(Boolean);
     const allPh = eqs.flatMap(e => e.items.flatMap(it => phOf(e, it)));
     const lastTs = allPh.reduce((m, x) => Math.max(m, x.takenAt || 0), 0) || Date.now();
@@ -1789,10 +1870,10 @@ async function makeReport(o){
         const vz = its.filter(i => (i.step || '').startsWith('vaz_') && (phOf(e, i).length || i.fields?.v || i.fields?.proj));
         if (vz.length) {
           need(20 + vz.length * 7); y = sec('Vazão de ar · tolerância ±10%', y);
-          const cols = [['Ponto', 0], ['Tipo', 30], ['Projeto m³/h', 70], ['Medido m³/h', 100], ['Desvio', 132]];
+          const cols = [['Ambiente · terminal', 0], ['Projeto m³/h', 70], ['Medido m³/h', 100], ['Desvio', 132]];
           cols.forEach(([t, dx]) => T(t.toUpperCase(), M + 2 + dx, y, {s:7.5, b:true, c:MUT})); doc.setDrawColor(29, 34, 41); doc.line(M, y + 2, W - M, y + 2); y += 7;
-          vz.forEach((it, j) => { const f = it.fields || {}, a = num(f.proj), b = num(f.v);
-            T(f.ponto || 'Ponto ' + (j + 1), M + 2, y, {s:9, b:true, w: 29, n:1}); T(f.tipo || '—', M + 32, y, {s:9.5}); T(f.proj || '—', M + 72, y, {s:9.5}); T(f.v || lab(it), M + 102, y, {s:9.5, c: f.v ? [29, 34, 41] : MUT});
+          vz.forEach((it, j) => { const f = it.fields || {}, a = num(f.proj), b = num(f.v) === null ? null : Math.abs(num(f.v));
+            T(vazLabel(e.p, it), M + 2, y, {s:8.5, b:true, w: 66, n:1}); T(f.proj || '—', M + 72, y, {s:9.5}); T(f.v || lab(it), M + 102, y, {s:9.5, c: f.v ? [29, 34, 41] : MUT});
             if (a && b !== null) { const d = (b - a) / a * 100, ok = Math.abs(d) <= 10, c = ok ? GRN : RED;
               T((d > 0 ? '+' : '') + d.toFixed(1).replace('.', ',') + '%', M + 134, y, {s:9.5, b:true, c});
               const bx = M + 152, bw = 26; doc.setFillColor(238, 241, 244); doc.roundedRect(bx, y - 2.6, bw, 2.4, 1.2, 1.2, 'F'); const w = Math.min(Math.abs(d), 20) / 20 * bw / 2;
@@ -2381,6 +2462,12 @@ document.addEventListener('click', async e => {
     case 'version': checkUpdate(true); break;
     case 'sketch': openSketch(id); break;
     case 'steps-sel': stepsSheet(await get('projects', view.id)); break;
+    case 'add-meas': { await flushGuideFields(); const g = +b.dataset.g, t = b.dataset.t, its = await byIdx('items', 'projectId', view.id);
+      const ns = vazMembers(its, g).filter(m => vazParse(m.step).t === t).map(m => vazParse(m.step).n); view['n' + g + t] = Math.max(1, ...ns, view['n' + g + t] || 0) + 1; render(); break; }
+    case 'add-type': view.addT = [...(view.addT || []), b.dataset.g + b.dataset.t]; render(); break;
+    case 'add-amb': { await flushGuideFields(); const p0 = await get('projects', view.id), its = await byIdx('items', 'projectId', view.id);
+      const n = Math.max(p0.vazN || 1, ...its.map(i => vazParse(i.step)?.g || 0)) + 1; p0.vazN = n; await put('projects', p0);
+      view.step = guideSteps(its, p0).findIndex(s => s.key === 'vaz_' + n); render(); break; }
     case 'croqui-new': croquiPick({pid: view.id}); break;
     case 'croqui-item': croquiPick({itemId: id}); break;
     case 'phedit': phEditSheet(id); break;
@@ -2388,7 +2475,7 @@ document.addEventListener('click', async e => {
     case 'calc-use': { const it = await ensureStepItem(view.id, b.dataset.key); it.fields = {...(it.fields || {}), v: b.dataset.val}; await put('items', it); toast('Vazão medida preenchida.'); render(); break; }
     case 'calc-all': { for (const it of (await byIdx('items', 'projectId', view.id)).filter(i => (i.step || '').startsWith('vaz_'))) { it.fields = {...(it.fields || {}), grelha: b.dataset.g}; await put('items', it); } toast('Grelha aplicada a todos os pontos.'); render(); break; }
     case 'guide': { const p0 = await get('projects', view.id); if (!p0.stepsSel) { stepsSheet(p0, () => document.querySelector('[data-act=guide]')?.click()); break; }
-      const its = await byIdx('items', 'projectId', view.id), st = guideSteps(its, p0); const f = st.findIndex(s => !stepDone(its.find(i => i.step === s.key)));
+      const its = await byIdx('items', 'projectId', view.id), st = guideSteps(its, p0); const f = st.findIndex(s => !doneOf(s, its));
       go({name:'guide', id: view.id, step: f < 0 ? 0 : f}); break; }
     case 'na': { await flushGuideFields(); const key = b.dataset.key;
       promptSheet('Não se aplica', 'Justificativa (opcional)', '', 'Confirmar', async v => { const it = await ensureStepItem(view.id, key); it.na = true; it.naWhy = v; it.updatedAt = Date.now(); await put('items', it); view.step = (view.step || 0) + 1; render(); }, true); break; }
