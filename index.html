@@ -386,7 +386,7 @@ async function os(name, mode = 'readonly'){ const d = await idb(); return d.tran
 const getAll = async n => P((await os(n)).getAll());
 const byIdx = async (n, idx, v) => P((await os(n)).index(idx).getAll(v));
 const get = async (n, k) => P((await os(n)).get(k));
-const APP_VERSION = 12, APP_DATE = '11/11/2026';
+const APP_VERSION = 13, APP_DATE = '11/11/2026';
 const SYNCED = ['folders', 'projects', 'items', 'photos'];
 const rawPut = async (n, v) => P((await os(n, 'readwrite')).put(v));
 const put = async (n, v) => { if (SYNCED.includes(n) && v) v.mt = Date.now(); let r; try { r = await rawPut(n, v); } catch (e) { setSaveState('err'); throw e; } cloudPush(n, [v]); if (n !== 'settings') setSaveState('ok'); return r; };
@@ -1552,15 +1552,17 @@ function calcResult(g, phs){
 }
 async function calcHtml(p, it, phs, key){
   const gs = await grilles(), gid = it?.fields?.grelha || p.lastGrille || gs[0]?.id, g = gs.find(x => x.id === gid);
-  const r = calcResult(g, phs), v = r.vars;
+  const r = calcResult(g, phs), v = r.vars, adj = numVal(it?.fields?.adj ?? p.lastAdj) || 0, fa = 1 + adj / 100;
   const ln = [r.ms.length ? `Média de ${r.ms.length} leitura(s): <b>${fmtN(v.V)} m/s</b>` : '', r.pa.length ? `Pressão média: <b>${fmtN(v.P)} Pa</b>` : ''].filter(Boolean).join(' · ');
   return `<div class="panel"><span class="lb">Calculadora de vazão</span>
     <select class="inp" data-act-change="grelha" data-key="${key}">${gs.map(x => `<option value="${x.id}" ${x.id === gid ? 'selected' : ''}>${esc(x.name)}</option>`).join('')}</select>
     <p class="hint">${g ? `Fórmula: <b>Q = ${esc(g.formula)}</b>${['A', 'C', 'H', 'K'].filter(k => g[k]).map(k => ` · ${k} = ${esc(g[k])}`).join('')}` : ''} <button class="text-btn" data-act="grilles">Editar grelhas</button></p>
+    <div class="field" style="margin:6px 0"><label class="lb">Ajuste da medição (%) <span style="font-weight:400;color:var(--muted)">só no app, não sai no relatório</span></label>
+      <input class="inp gf" data-key="${key}" data-k="adj" inputmode="decimal" value="${esc(it?.fields?.adj ?? p.lastAdj ?? '')}" placeholder="Ex.: 5"></div>
     <p class="hint" style="color:var(--text)">${ln || 'Toque nas fotos e registre as leituras (m/s, Pa ou m³/h).'}</p>
-    ${r.q !== null ? `<div class="calcout">Q = <b>${fmtN(r.q, 0)} m³/h</b></div><div class="row"><button class="btn primary" data-act="calc-use" data-key="${key}" data-val="${Math.round(r.q)}">Usar como vazão medida</button>
+    ${r.q !== null ? `<div class="calcout">Q = <b>${fmtN(r.q * fa, 0)} m³/h</b>${adj ? ` <span class="hint">(${fmtN(r.q, 0)} + ${fmtN(adj, 1)}%)</span>` : ''}</div><div class="row"><button class="btn primary" data-act="calc-use" data-key="${key}" data-val="${Math.round(r.q * fa)}">Usar como vazão medida</button>
       <button class="btn ghost" data-act="calc-all" data-g="${gid}">Usar esta grelha em todos os pontos</button></div>` : ''}
-    ${r.sum !== null ? `<div class="calcout">Soma das leituras: <b>${fmtN(r.sum, 0)} m³/h</b> <button class="text-btn" data-act="calc-use" data-key="${key}" data-val="${Math.round(r.sum)}">Usar</button></div>` : ''}</div>`;
+    ${r.sum !== null ? `<div class="calcout">Soma das leituras: <b>${fmtN(r.sum * fa, 0)} m³/h</b>${adj ? ` <span class="hint">(+ ${fmtN(adj, 1)}%)</span>` : ''} <button class="text-btn" data-act="calc-use" data-key="${key}" data-val="${Math.round(r.sum * fa)}">Usar</button></div>` : ''}</div>`;
 }
 function phEditSheet(phId){
   get('photos', phId).then(ph => {
@@ -1822,14 +1824,14 @@ async function makeReport(o){
       for (const [i, {e, it, code}] of pends.entries()) {
         if (y > H - 40) { y = page('Quadro de pendências', `${local} · ${dateStr}`); head(); }
         if (i % 2) { doc.setFillColor(246, 248, 250); doc.rect(M, y, CW, 16, 'F'); }
-        const ph = phOf(e, it)[0]; if (ph) fit(ph.tsrc || await img(ph), M + 15, y + 1.5, 18, 13, ph.w || 4, ph.h || 3);
+        const ph = phOf(e, it)[0]; if (ph && !o.noPhotos) fit(ph.tsrc || await img(ph), M + 15, y + 1.5, 18, 13, ph.w || 4, ph.h || 3);
         T(code, M + 2, y + 9, {s:9, b:true}); T(e.p.name, M + 36, y + 9, {s:9, w: 28, n:2}); T(it.fields?.local || '—', M + 66, y + 9, {s:9, w: 32, n:2});
         T(it.desc || it.title, M + 100, y + 7, {s:9, w: 56, n:3}); pill(it.fields?.prio || 'Normal', M + 160, y + 9, PCOL[it.fields?.prio] || BLU); y += 16;
       }
       /* pendências: fichas */
       y = page('Pendências · detalhamento', `${local} · ${dateStr}`);
       for (const [pi, {e, it, code}] of pends.entries()) {
-        const phs = phOf(e, it), rows = Math.ceil(phs.length / 3);
+        const phs = o.noPhotos ? [] : phOf(e, it), rows = Math.ceil(phs.length / 3);
         if (y + 22 + Math.min(rows, 1) * 52 > H - 22) y = page('Pendências · detalhamento', `${local} · ${dateStr}`);
         T(`${code} · ${e.p.name}`, M, y, {s:11.5, b:true, c:NAVY}); pill(it.fields?.prio || 'Normal', M + doc.getTextWidth(pdfSafe(`${code} · ${e.p.name}`)) + 4, y, PCOL[it.fields?.prio] || BLU);
         doc.setDrawColor(...AMB); doc.setLineWidth(.6); doc.line(M, y + 2, W - M, y + 2); doc.setLineWidth(.2); y += 8;
@@ -1852,10 +1854,10 @@ async function makeReport(o){
       const n = ei + 1, pav = e.path[e.path.length - 1]?.name || '', hdr = `${n}. ${e.p.name}`, hr = `${pav} · ${dateStr}`;
       const its = e.items.filter(i => i.kind !== 'pend' && !i.na), labels = new Map(); let k = 0;
       its.forEach(it => phOf(e, it).forEach(ph => labels.set(ph.id, `${n}.${++k}`)));
-      const lab = it => { const p = phOf(e, it)[0]; return p ? 'ver foto ' + labels.get(p.id) : '—'; };
+      const lab = it => { const p = phOf(e, it)[0]; return p && !o.noPhotos ? 'ver foto ' + labels.get(p.id) : '—'; };
       const byStep = key => its.find(i => i.step === key);
       y = page(hdr, hr);
-      const plq = byStep('plaqueta'), plqPh = plq ? phOf(e, plq)[0] : null;
+      const plq = byStep('plaqueta'), plqPh = plq && !o.noPhotos ? phOf(e, plq)[0] : null;
       const tx = plqPh ? M + 54 : M;
       if (plqPh) { doc.setFillColor(238, 241, 244); doc.rect(M, y, 48, 62, 'F'); fit(await img(plqPh), M, y, 48, 62, plqPh.w, plqPh.h); T('Plaqueta · foto ' + labels.get(plqPh.id), M, y + 66, {s:7.5, c:MUT}); }
       T(e.p.name, tx, y + 8, {s:20, b:true, c:NAVY}); T(e.path.map(f => f.name).join(' · '), tx, y + 15, {s:9, c:MUT, w: W - M - tx, n:2});
@@ -1922,7 +1924,7 @@ async function makeReport(o){
         doc.setFillColor(238, 241, 244); doc.rect(M, y, CW, H - y - 24, 'F'); fit(await img(ph), M, y, CW, H - y - 24, ph.w, ph.h); }
       /* fotos do equipamento: 4 por página */
       const cards = []; its.filter(i => i.kind !== 'croqui').forEach(it => phOf(e, it).forEach(ph => cards.push({it, ph})));
-      if (cards.length) {
+      if (cards.length && !o.noPhotos) {
         const cw = (CW - 6) / 2, chh = 62;
         let slot = 4;
         for (const {it, ph} of cards) {
@@ -1955,11 +1957,12 @@ async function compileSheet(fid){
   const s = openSheet(`<h2>Relatório da pasta</h2><p class="hint" style="margin:-6px 0 14px">${esc(f.name)}: ${ids.length} ${ids.length === 1 ? 'relatório' : 'relatórios'} juntos em um PDF, com o quadro de pendências geral no início.</p>
     <div class="field"><label class="lb" for="cp-name">Nome do arquivo</label><input class="inp" id="cp-name" maxlength="40" value="${esc(base)}"></div>
     <div class="field"><label class="lb" for="cp-doc">Nº do documento</label><input class="inp" id="cp-doc" inputmode="numeric" value="${esc(f.docNumber)}"></div>
+    <label class="check"><input type="checkbox" id="cp-ph" checked>Incluir fotos no relatório</label>
     ${rv}<button class="btn primary block" id="cp-go">${I.pdf}Gerar PDF</button>`);
   $('#cp-go', s).addEventListener('click', async () => {
     const d = $('#cp-doc', s).value.trim(); if (d && d !== String(f.docNumber)) { f.docNumber = d; await put('folders', f); }
     const folders = await getAll('folders'), path = pathTo(fid, folders);
-    closeSheet(); makeReport({ids, docNumber: f.docNumber, filename: ($('#cp-name', s).value.trim() || base) + '.pdf', title: path[1]?.name || f.name,
+    const noPh = !$('#cp-ph', s).checked; closeSheet(); makeReport({ids, noPhotos: noPh, docNumber: f.docNumber, filename: ($('#cp-name', s).value.trim() || base) + '.pdf', title: path[1]?.name || f.name,
       sub: `${ids.length} ${ids.length === 1 ? 'equipamento' : 'equipamentos'}${path.length > 2 ? ' · ' + f.name : ''}`});
   });
 }
@@ -2165,6 +2168,7 @@ async function shareSheet(pid){
     <div class="two"><div class="field"><label class="lb" for="sh-doc">Nº do documento</label><input class="inp" id="sh-doc" inputmode="numeric" value="${esc(p.docNumber)}"></div>
 </div>
     <p class="hint" style="margin:-4px 0 16px">${nPh} ${nPh === 1 ? 'foto' : 'fotos'} no relatório.</p>
+    <label class="check"><input type="checkbox" id="sh-ph" checked>Incluir fotos no relatório</label>
     ${rv}<button class="btn primary block" id="sh-go">${I.pdf}Gerar PDF</button>`);
   $('#sh-name', s).addEventListener('input', e => { $('#sh-cnt', s).textContent = `${e.target.value.length}/40`; });
   $('#sh-go', s).addEventListener('click', async () => {
@@ -2173,7 +2177,7 @@ async function shareSheet(pid){
     const opts = {filename: ($('#sh-name', s).value.trim() || base) + '.pdf', perPage: 4,
       includeEmpty: false, showText: true};
     const fl = await getAll('folders'), pth = pathTo(pid0(p), fl);
-    closeSheet(); makeReport({ids:[pid], kind: tplOf(p).guided ? tplOf(p).name.toUpperCase() : 'INSPEÇÃO', docNumber: p.docNumber, filename: opts.filename, title: pth[1]?.name || p.name,
+    const noPh = !$('#sh-ph', s).checked; closeSheet(); makeReport({ids:[pid], noPhotos: noPh, kind: tplOf(p).guided ? tplOf(p).name.toUpperCase() : 'INSPEÇÃO', docNumber: p.docNumber, filename: opts.filename, title: pth[1]?.name || p.name,
       sub: [p.name, pth[pth.length - 1]?.name].filter(Boolean).join(' · ')});
   });
 }
@@ -2534,6 +2538,8 @@ $('#in-cam').addEventListener('change', e => onPhotos([...e.target.files]));
 $('#in-gal').addEventListener('change', e => onPhotos([...e.target.files]));
 $('#in-sheet').addEventListener('change', e => { const f = e.target.files[0]; if (f) handleSheetFile(f); });
 let flogoTarget = null;
+document.addEventListener('change', async e => { const el = e.target; if (!el.classList || !el.classList.contains('gf') || el.dataset.k !== 'adj') return;
+  await saveGuideField(el); const p = await get('projects', view.id); if (p) { p.lastAdj = el.value; await put('projects', p); } render(); });
 $('#in-plant').addEventListener('change', async e => { const f = e.target.files[0]; if (!f || !plantFolder) return;
   try { closeSheet(); await plantFromFile(f, plantFolder); plantsSheet(plantFolder); } catch (er) { hideToast(); toast('Não foi possível importar: ' + er.message, 4000); } });
 document.addEventListener('change', async e => { const el = e.target; if (!el.dataset || el.dataset.actChange !== 'grelha') return;
