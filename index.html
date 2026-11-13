@@ -386,7 +386,7 @@ async function os(name, mode = 'readonly'){ const d = await idb(); return d.tran
 const getAll = async n => P((await os(n)).getAll());
 const byIdx = async (n, idx, v) => P((await os(n)).index(idx).getAll(v));
 const get = async (n, k) => P((await os(n)).get(k));
-const APP_VERSION = 11, APP_DATE = '11/11/2026';
+const APP_VERSION = 12, APP_DATE = '11/11/2026';
 const SYNCED = ['folders', 'projects', 'items', 'photos'];
 const rawPut = async (n, v) => P((await os(n, 'readwrite')).put(v));
 const put = async (n, v) => { if (SYNCED.includes(n) && v) v.mt = Date.now(); let r; try { r = await rawPut(n, v); } catch (e) { setSaveState('err'); throw e; } cloudPush(n, [v]); if (n !== 'settings') setSaveState('ok'); return r; };
@@ -907,7 +907,7 @@ function itemSummary(p, it){
   if (tplOf(p).guided) {
     if (it.kind === 'pend') return [fl.prio, fl.local].filter(Boolean).join(' · ');
     if (it.na) return 'Não se aplica' + (it.naWhy ? ': ' + it.naWhy : '');
-    const s = stepDef(it.step); const v = [fl.ponto, fl.tipo].concat((s?.fields || []).filter(f => f.u && fl[f.k]).map(f => (f.k === 'proj' ? 'projeto ' : '') + fl[f.k] + ' ' + f.u)).filter(Boolean).join(' · ');
+    const s = stepDef(it.step); const v = [fl.ponto, fl.local, fl.tipo].concat((s?.fields || []).filter(f => f.u && fl[f.k]).map(f => (f.k === 'proj' ? 'projeto ' : '') + fl[f.k] + ' ' + f.u)).filter(Boolean).join(' · ');
     return v || ((it.photoIds || []).length && (s?.fields || []).length ? 'Valor: ver foto' : '');
   }
   if (p?.template === 'arcond') return [fl.tag, fl.cap, fieldValue(tpl.fields.find(f => f.k === 'dt'), fl) ? 'ΔT ' + fieldValue(tpl.fields.find(f => f.k === 'dt'), fl) + ' °C' : ''].filter(Boolean).join(' · ');
@@ -1351,7 +1351,7 @@ function stOf(s, items){
   if (!ms.length) return 'none'; return ms.every(x => x === 'filled' || x === 'na') ? 'filled' : 'partial';
 }
 const doneOf = (s, items) => ['filled', 'na'].includes(stOf(s, items));
-function vazLabel(p, it){ const v = vazParse(it.step); if (!v) return it.title; return `${p?.vazAmb?.[v.g] || 'Ambiente ' + v.g} · ${VZT[v.t] || it.fields?.tipo || ''} ${v.t ? v.n : ''}`.trim(); }
+function vazLabel(p, it){ const v = vazParse(it.step); if (!v) return it.title; return (`${p?.vazAmb?.[v.g] || 'Ambiente ' + v.g} · ${VZT[v.t] || it.fields?.tipo || ''} ${v.t ? v.n : ''}`.trim() + (it.fields?.local ? ' · ' + it.fields.local : '')); }
 const ST_LABEL = {none:'Não iniciado', partial:'Registro parcial', filled:'Preenchido', na:'Não se aplica'};
 const RES_LABEL = {ok:'Conforme', anomalia:'Não conforme', none:'Não avaliado'};
 async function ensureStepItem(pid, key){
@@ -1680,7 +1680,8 @@ async function renderVazGroup(p, items, st, i, s){
     for (let n = 1; n <= cnt; n++) {
       const key = `vaz_${g}_${t}_${n}`, it = mem.find(m => m.step === key), fl = it?.fields || {};
       const phs = it ? (await Promise.all((it.photoIds || []).map(id => get('photos', id)))).filter(Boolean) : [], ref = `data-key="${key}"`;
-      html += `<div class="panel">${cnt > 1 ? `<span class="lb">Medição ${n} · <span class="st-${stepState(it)}">${ST_LABEL[stepState(it)]}</span></span>` : `<span class="lb st-${stepState(it)}">${ST_LABEL[stepState(it)]}</span>`}
+      html += `<div class="panel">${cnt > 1 ? `<span class="lb">${esc(fl.local || 'Medição ' + n)} · <span class="st-${stepState(it)}">${ST_LABEL[stepState(it)]}</span></span>` : `<span class="lb st-${stepState(it)}">${ST_LABEL[stepState(it)]}</span>`}
+        <div class="field"><label class="lb">Local do terminal <span style="font-weight:400;color:var(--muted)">opcional</span></label><input class="inp gf" ${ref} data-k="local" value="${esc(fl.local || '')}" placeholder="Ex.: difusor próximo à janela"></div>
         <div class="two"><div class="field"><label class="lb">Vazão de projeto (m³/h)</label><input class="inp gf" ${ref} data-k="proj" inputmode="decimal" value="${esc(fl.proj || '')}" placeholder="Pode preencher depois"></div>
         <div class="field"><label class="lb">Vazão medida (m³/h)</label><input class="inp gf" ${ref} data-k="v" inputmode="decimal" value="${esc(fl.v || '')}" placeholder="Pode preencher depois"></div></div>
         <span class="lb">Fotos das leituras ${phs.length ? `(${phs.length})` : ''}</span>
@@ -1873,7 +1874,7 @@ async function makeReport(o){
           const cols = [['Ambiente · terminal', 0], ['Projeto m³/h', 70], ['Medido m³/h', 100], ['Desvio', 132]];
           cols.forEach(([t, dx]) => T(t.toUpperCase(), M + 2 + dx, y, {s:7.5, b:true, c:MUT})); doc.setDrawColor(29, 34, 41); doc.line(M, y + 2, W - M, y + 2); y += 7;
           vz.forEach((it, j) => { const f = it.fields || {}, a = num(f.proj), b = num(f.v) === null ? null : Math.abs(num(f.v));
-            T(vazLabel(e.p, it), M + 2, y, {s:8.5, b:true, w: 66, n:1}); T(f.proj || '—', M + 72, y, {s:9.5}); T(f.v || lab(it), M + 102, y, {s:9.5, c: f.v ? [29, 34, 41] : MUT});
+            T(vazLabel(e.p, it), M + 2, y, {s:8, b:true, w: 66, n:1}); T(f.proj || '—', M + 72, y, {s:9.5}); T(f.v || lab(it), M + 102, y, {s:9.5, c: f.v ? [29, 34, 41] : MUT});
             if (a && b !== null) { const d = (b - a) / a * 100, ok = Math.abs(d) <= 10, c = ok ? GRN : RED;
               T((d > 0 ? '+' : '') + d.toFixed(1).replace('.', ',') + '%', M + 134, y, {s:9.5, b:true, c});
               const bx = M + 152, bw = 26; doc.setFillColor(238, 241, 244); doc.roundedRect(bx, y - 2.6, bw, 2.4, 1.2, 1.2, 'F'); const w = Math.min(Math.abs(d), 20) / 20 * bw / 2;
