@@ -387,7 +387,7 @@ async function os(name, mode = 'readonly'){ const d = await idb(); return d.tran
 const getAll = async n => P((await os(n)).getAll());
 const byIdx = async (n, idx, v) => P((await os(n)).index(idx).getAll(v));
 const get = async (n, k) => P((await os(n)).get(k));
-const APP_VERSION = 16, APP_DATE = '11/11/2026';
+const APP_VERSION = 17, APP_DATE = '11/11/2026';
 const SYNCED = ['folders', 'projects', 'items', 'photos'];
 const rawPut = async (n, v) => P((await os(n, 'readwrite')).put(v));
 const put = async (n, v) => { if (SYNCED.includes(n) && v) v.mt = Date.now(); let r; try { r = await rawPut(n, v); } catch (e) { setSaveState('err'); throw e; } cloudPush(n, [v]); if (n !== 'settings') setSaveState('ok'); return r; };
@@ -1303,7 +1303,7 @@ const HVAC_STEPS = [
       {k:'proj', l:'Vazão de projeto', u:'m³/h', req:true}, {k:'v', l:'Vazão medida', u:'m³/h', req:true}]},
   {key:'hid', rep:true, sec:'TAB hidrônico', t:'Ponto hidrônico', q:'Balanceamento hidrônico. Identifique a válvula ou o circuito, registre as leituras e adicione a foto ou o print do medidor.',
     fields:[{k:'ponto', t:'text', l:'TAG da válvula / circuito', ph:'Ex.: VBC-03 · FCT-01-1P', req:true}, {k:'proj', l:'Vazão de projeto', u:'m³/h', req:true}, {k:'v', l:'Vazão medida', u:'m³/h', req:true},
-      {k:'dp', l:'Pressão diferencial', u:'kPa'}, {k:'te', l:'Temperatura de entrada', u:'°C'}, {k:'ts', l:'Temperatura de saída', u:'°C'}]},
+      {k:'voltas', l:'Abertura da válvula', u:'voltas'}, {k:'dp', l:'Pressão diferencial', u:'kPa'}, {k:'te', l:'Temperatura de entrada', u:'°C'}, {k:'ts', l:'Temperatura de saída', u:'°C'}]},
   {key:'filtro', sec:'Filtro', t:'Filtro', q:'Pressão diferencial do filtro. Registre a leitura do manômetro.', fields:[{k:'v', l:'Pressão medida', u:'Pa', req:true}, {k:'troca', l:'Pressão de troca (fabricante)', u:'Pa'}]},
   {key:'amb', sec:'Ambiente', t:'Temperatura e umidade', q:'Condições do ambiente. Adicione a foto do termo-higrômetro e toque nela para registrar a temperatura e a umidade.'},
   {key:'v_rs', sec:'Elétrica', t:'Tensão R-S', q:'Tensão de alimentação entre as fases R e S.', fields:[NUM('V')]},
@@ -1901,12 +1901,12 @@ async function makeReport(o){
         const hd = its.filter(i => (i.step || '').startsWith('hid_') && (phOf(e, i).length || i.fields?.v || i.fields?.proj));
         if (hd.length) {
           need(20 + hd.length * 7); y = sec('TAB hidrônico · tolerância ±10%', y);
-          [['Ponto', 0], ['Projeto m³/h', 40], ['Medido m³/h', 64], ['Desvio', 88], ['Dif. P kPa', 108], ['Dif. T °C', 132], ['Foto', 156]].forEach(([t, dx]) => T(t.toUpperCase(), M + 2 + dx, y, {s:7, b:true, c:MUT}));
+          [['Ponto', 0], ['Projeto m³/h', 36], ['Medido m³/h', 58], ['Desvio', 80], ['Voltas', 100], ['Dif. P kPa', 118], ['Dif. T °C', 140], ['Foto', 162]].forEach(([t, dx]) => T(t.toUpperCase(), M + 2 + dx, y, {s:7, b:true, c:MUT}));
           doc.setDrawColor(29, 34, 41); doc.line(M, y + 2, W - M, y + 2); y += 7;
           hd.forEach((it, j) => { const f = it.fields || {}, a = num(f.proj), b = num(f.v), te = num(f.te), ts = num(f.ts), pp = phOf(e, it)[0];
-            T(f.ponto || 'Ponto ' + (j + 1), M + 2, y, {s:9, b:true, w: 38, n:1}); T(f.proj || '—', M + 42, y, {s:9}); T(f.v || '—', M + 66, y, {s:9});
-            if (a && b !== null) { const d = (b - a) / a * 100; T((d > 0 ? '+' : '') + d.toFixed(1).replace('.', ',') + '%', M + 90, y, {s:9, b:true, c: Math.abs(d) <= 10 ? GRN : RED}); } else T('—', M + 90, y, {s:9});
-            T(f.dp || '—', M + 110, y, {s:9}); T(te !== null && ts !== null ? Math.abs(te - ts).toFixed(1).replace('.', ',') : '—', M + 134, y, {s:9}); T(pp ? labels.get(pp.id) : '—', M + 158, y, {s:9, c:MUT});
+            T(f.ponto || 'Ponto ' + (j + 1), M + 2, y, {s:8.5, b:true, w: 34, n:1}); T(f.proj || '—', M + 38, y, {s:9}); T(f.v || '—', M + 60, y, {s:9}); T(f.voltas || '—', M + 102, y, {s:9});
+            if (a && b !== null) { const d = (b - a) / a * 100; T((d > 0 ? '+' : '') + d.toFixed(1).replace('.', ',') + '%', M + 82, y, {s:9, b:true, c: Math.abs(d) <= 10 ? GRN : RED}); } else T('—', M + 82, y, {s:9});
+            T(f.dp || '—', M + 120, y, {s:9}); T(te !== null && ts !== null ? Math.abs(te - ts).toFixed(1).replace('.', ',') : '—', M + 142, y, {s:9}); T(pp ? labels.get(pp.id) : '—', M + 164, y, {s:9, c:MUT});
             doc.setDrawColor(...LN); doc.line(M, y + 2.5, W - M, y + 2.5); y += 7; });
           y += 3;
         }
