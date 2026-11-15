@@ -358,12 +358,13 @@ const I = {
 };
 
 /* ---------- IndexedDB ---------- */
+const DBN = (() => { try { return localStorage.getItem('rc_db') || 'relatorio-campo'; } catch (e) { return 'relatorio-campo'; } })();
 let dbp;
 function idb(){
   if (dbp) return dbp;
   dbp = new Promise((res, rej) => {
     let r;
-    try { r = indexedDB.open('relatorio-campo', 2); } catch (e) { rej(e); return; }
+    try { r = indexedDB.open(DBN, 2); } catch (e) { rej(e); return; }
     r.onupgradeneeded = ev => {
       const d = r.result, old = ev.oldVersion;
       if (old < 1) {
@@ -386,7 +387,7 @@ async function os(name, mode = 'readonly'){ const d = await idb(); return d.tran
 const getAll = async n => P((await os(n)).getAll());
 const byIdx = async (n, idx, v) => P((await os(n)).index(idx).getAll(v));
 const get = async (n, k) => P((await os(n)).get(k));
-const APP_VERSION = 13, APP_DATE = '11/11/2026';
+const APP_VERSION = 15, APP_DATE = '11/11/2026';
 const SYNCED = ['folders', 'projects', 'items', 'photos'];
 const rawPut = async (n, v) => P((await os(n, 'readwrite')).put(v));
 const put = async (n, v) => { if (SYNCED.includes(n) && v) v.mt = Date.now(); let r; try { r = await rawPut(n, v); } catch (e) { setSaveState('err'); throw e; } cloudPush(n, [v]); if (n !== 'settings') setSaveState('ok'); return r; };
@@ -721,6 +722,7 @@ async function renderMore(){
     <div class="group">${row('version', I.save, 'Versão ' + APP_VERSION, 'Atualizada em ' + APP_DATE + ' · toque para verificar', 'blue')}
       ${row('grilles', I.sheet, 'Grelhas e difusores', 'Fórmulas dos fabricantes para a calculadora de vazão')}
       ${row('save-phone', I.img, 'Salvar fotos também no celular', (await getSetting('savePhone')) ? 'Ligado: oferece salvar após cada foto' : 'Desligado')}</div>
+    ${isWsAdmin() ? `<div class="sec"><h2>Empresa</h2></div><div class="group">${row('ws', I.case, 'Empresa ativa: ' + esc(cloud.orgName || company.name || ''), 'Trocar de empresa ou criar uma nova', 'blue')}</div>` : ''}
     <div class="sec"><h2>Equipe na nuvem</h2></div>
     <div class="group">${cloud.on || cloud.orgId ? row('team', I.case, 'Equipe ' + esc(cloud.orgName || ''), esc(cloud.email || '') + ' · ' + esc(ROLE_LABEL[cloud.role] || ''), 'blue') + row('cloud-logout', I.upload, 'Sair da conta', 'Os relatórios continuam neste celular')
       : row('cloud-login', I.upload, 'Entrar ou criar conta', 'Sincronize os relatórios com a equipe', 'blue')}</div>
@@ -1716,6 +1718,11 @@ async function renderVazGroup(p, items, st, i, s){
   </div></nav>`;
   setSaveState();
 }
+async function dlTeam(ids){
+  if (!cloud.on) { toast('Entre na equipe na nuvem (Mais → Equipe na nuvem) para baixar as fotos dos colegas.', 5000); return; }
+  if (!navigator.onLine) { toast('Sem internet para baixar as fotos.'); return; }
+  const n = await downloadPhotos(ids, null); hideToast(); toast(n ? `${n} ${n === 1 ? 'foto baixada' : 'fotos baixadas'}. Pode gerar o relatório.` : 'Todas as fotos já estão neste aparelho.', 4000); render();
+}
 async function downloadPhotos(ids, btn){
   if (!cloud.on || !fb) { if (btn) toast('Entre na equipe na nuvem para baixar as fotos.'); return 0; }
   if (!navigator.onLine) { if (btn) toast('Sem internet para baixar as fotos.'); return 0; }
@@ -1975,6 +1982,35 @@ async function wmProcess(file){
   x.putImageData(d, 0, 0); return {d: c.toDataURL('image/png'), w: c.width, h: c.height};
 }
 
+
+/* ---------- várias empresas (cada uma com dados separados) ---------- */
+const WS_ADMINS = ['batistaadrianorocha@gmail.com', 'adriano.batista@ferreiraneves.com.br'];
+const isWsAdmin = () => cloud.on && WS_ADMINS.includes((cloud.email || '').toLowerCase());
+function wsList(){ try { return JSON.parse(localStorage.getItem('rc_ws') || '[]'); } catch (e) { return []; } }
+function wsSave(l){ try { localStorage.setItem('rc_ws', JSON.stringify(l)); } catch (e) {} }
+async function wsSheet(){
+  const comp = await getCompany(); let l = wsList();
+  if (!l.some(w => w.db === DBN)) { l.unshift({db: DBN, name: cloud.orgName || comp.name || 'Empresa principal', orgId: cloud.orgId}); wsSave(l); }
+  const s = openSheet(`<h2>Empresas</h2><p class="hint" style="margin:-6px 0 12px">Cada empresa tem pastas, relatórios, equipe e dados do relatório separados. Toque para trocar.</p>
+    ${l.map(w => `<button class="menu-item" data-db="${esc(w.db)}">${I.case}<span>${esc(w.name)}${w.db === DBN ? ' <b style="color:var(--accent-text)">· ativa</b>' : ''}</span></button>`).join('')}
+    <button class="btn primary block" data-c="new" style="margin-top:12px">${I.plus}Nova empresa</button>`);
+  s.addEventListener('click', ev => {
+    const b = ev.target.closest('[data-db]');
+    if (b) { if (b.dataset.db !== DBN) { try { localStorage.setItem('rc_db', b.dataset.db); } catch (e) {} location.replace(location.pathname); } else closeSheet(); return; }
+    if (!ev.target.closest('[data-c="new"]')) return;
+    promptSheet('Nova empresa', 'Nome da empresa', '', 'Criar empresa', async name => {
+      if (!navigator.onLine || !fb) { toast('Para criar uma empresa é preciso internet e estar logado.', 4000); return; }
+      try {
+        const {F, db} = fb, u = fb.auth.currentUser, orgId = uid() + uid();
+        await F.setDoc(F.doc(db, 'orgs', orgId), {name, ownerUid: u.uid, createdAt: Date.now()});
+        await F.setDoc(F.doc(db, 'orgs', orgId, 'members', u.uid), {email: (u.email || '').toLowerCase(), role:'owner', joinedAt: Date.now()});
+        const dbn = 'relatorio-campo-' + orgId; wsSave([...wsList(), {db: dbn, name, orgId}]);
+        localStorage.setItem('rc_new', JSON.stringify({orgId, name, email: u.email || ''})); localStorage.setItem('rc_db', dbn);
+        location.replace(location.pathname);
+      } catch (e) { toast('Não foi possível criar: ' + (e.code || e.message), 4000); }
+    });
+  });
+}
 /* ---------- empresa ---------- */
 async function companySheet(){
   const c = await getCompany();
@@ -2434,6 +2470,7 @@ document.addEventListener('click', async e => {
       menu(f.name, [
         {icon:'pdf', label:'Gerar relatório da pasta (tudo junto)', run: () => compileSheet(f.id)},
         {icon:'img', label:'Plantas do projeto (para croqui)', run: () => plantsSheet(f.id)},
+        {icon:'save', label:'Baixar fotos da equipe (pasta toda)', run: async () => dlTeam(await folderProjectIds(f.id))},
         {icon:'img', label: f.logo ? 'Trocar logo do cliente' : 'Logo do cliente (aparece no relatório)', run: () => { flogoTarget = f.id; $('#in-flogo').value = ''; $('#in-flogo').click(); }},
         ...(f.logo ? [{icon:'trash', label:'Remover logo do cliente', run: async () => { delete f.logo; await put('folders', f); toast('Logo removido.'); }}] : []),
         {icon:'edit', label:'Renomear pasta', run: () => promptSheet('Renomear pasta', 'Nome da pasta', f.name, 'Salvar', async v => { f.name = v; await put('folders', f); render(); })},
@@ -2447,6 +2484,7 @@ document.addEventListener('click', async e => {
       menu(p.name, [
         ...(view.name !== 'project' ? [{icon:'clip', label:'Abrir relatório', run: () => go({name:'project', id: p.id})}] : []),
         {icon:'pdf', label:'Compartilhar PDF', run: () => shareSheet(p.id)},
+        {icon:'save', label:'Baixar fotos da equipe', run: () => dlTeam([p.id])},
         {icon:'sheet', label:'Importar planilha neste relatório', run: () => startImport(p.id, pid0(p))},
         {icon:'plus', label:'Adicionar item sem foto', run: async () => { const it = await createItem(p.id); go({name:'item', id: it.id}); }},
         {icon:'text', label:'Descrição padrão', run: () => promptSheet('Descrição padrão', 'Usada em itens novos e na importação quando a planilha não tem descrição', p.defaultDesc || '', 'Salvar', async v => { p.defaultDesc = v; await put('projects', p); toast('Descrição padrão salva.'); }, true)},
@@ -2465,6 +2503,7 @@ document.addEventListener('click', async e => {
     case 'cam-add': camTarget = view.id; $('#in-cam').value = ''; $('#in-cam').click(); break;
     case 'gal-add': camTarget = view.id; $('#in-gal').value = ''; $('#in-gal').click(); break;
     case 'version': checkUpdate(true); break;
+    case 'ws': wsSheet(); break;
     case 'sketch': openSketch(id); break;
     case 'steps-sel': stepsSheet(await get('projects', view.id)); break;
     case 'add-meas': { await flushGuideFields(); const g = +b.dataset.g, t = b.dataset.t, its = await byIdx('items', 'projectId', view.id);
@@ -2564,6 +2603,11 @@ document.addEventListener('visibilitychange', () => { if (document.hidden) saveF
       else if (last.id && await get(store, last.id)) view = {name: last.name, id: last.id};
     }
   } catch (e) {}
+  try { const nw = JSON.parse(localStorage.getItem('rc_new') || 'null');
+    if (nw) { localStorage.removeItem('rc_new');
+      await rawPut('settings', {key:'cloud', value:{orgId: nw.orgId, role:'owner', orgName: nw.name, email: nw.email}});
+      await rawPut('settings', {key:'cloudInit_' + nw.orgId, value: true});
+      await rawPut('settings', {key:'company', value:{name: nw.name, mt: Date.now()}}); view = {name:'home'}; } } catch (e) {}
   await render();
   updateChip();
   cloudBoot().catch(e => console.warn('nuvem', e));
