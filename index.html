@@ -277,6 +277,7 @@ textarea.inp{min-height:120px;resize:vertical;line-height:1.5}
 .gphi span{display:block;font-size:11.5px;line-height:1.3;color:var(--muted);margin-top:3px;max-height:3em;overflow:hidden}
 .gphi .text-btn{min-height:30px;padding:0}.calcout{font-size:16px;margin:8px 0}
 .vblk-t{font-weight:700;font-size:15px;margin:16px 2px 8px;color:var(--accent-text);text-transform:uppercase;letter-spacing:.04em}
+.cbadge{display:inline-block;font-size:11px;font-weight:700;padding:1px 7px;border-radius:6px;background:var(--accent-soft);color:var(--accent-text);margin-right:8px;vertical-align:1px}
 .hidden{display:none!important}
 .ptitle{font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--accent-text);margin:0 0 12px}
 .tseg{grid-template-columns:repeat(auto-fit,minmax(90px,1fr))}
@@ -387,7 +388,7 @@ async function os(name, mode = 'readonly'){ const d = await idb(); return d.tran
 const getAll = async n => P((await os(n)).getAll());
 const byIdx = async (n, idx, v) => P((await os(n)).index(idx).getAll(v));
 const get = async (n, k) => P((await os(n)).get(k));
-const APP_VERSION = 17, APP_DATE = '11/11/2026';
+const APP_VERSION = 18, APP_DATE = '11/11/2026';
 const SYNCED = ['folders', 'projects', 'items', 'photos'];
 const rawPut = async (n, v) => P((await os(n, 'readwrite')).put(v));
 const put = async (n, v) => { if (SYNCED.includes(n) && v) v.mt = Date.now(); let r; try { r = await rawPut(n, v); } catch (e) { setSaveState('err'); throw e; } cloudPush(n, [v]); if (n !== 'settings') setSaveState('ok'); return r; };
@@ -411,7 +412,8 @@ async function rawDelMany(map){
 }
 const getSetting = async k => (await get('settings', k))?.value;
 const setSetting = (k, v) => { if (k === 'company' && v) { v.mt = Date.now(); cloudPushCompany(v); } return rawPut('settings', {key:k, value:v}); };
-async function getCompany(){ return {...COMPANY_DEFAULT, ...((await getSetting('company')) || {})}; }
+async function getCompany(pid){ const c = {...COMPANY_DEFAULT, ...((await getSetting('company')) || {})}; const pr = pid && pid !== 'main' && (c.profiles || []).find(x => x.id === pid);
+  return pr ? {...COMPANY_DEFAULT, ...pr, grilles: c.grilles, profiles: c.profiles} : c; }
 async function nextDocNumber(){ const n = ((await getSetting('docSeq')) || 0) + 1; await setSetting('docSeq', n); return n; }
 
 /* ---------- helpers ---------- */
@@ -661,7 +663,7 @@ async function renderFolder(){
   const countIn = f => { const a = folders.filter(x => pid0(x) === f.id).length, b = projects.filter(x => pid0(x) === f.id).length;
     return [a ? `${a} ${a === 1 ? 'pasta' : 'pastas'}` : '', b ? `${b} ${b === 1 ? 'relatório' : 'relatórios'}` : ''].filter(Boolean).join(', ') || 'Vazia'; };
   const rows = subs.map(f => `<div class="lrow"><button class="main" data-act="folder" data-id="${f.id}"><span class="ico">${I.folder}</span>
-      <div class="txt"><div class="nm">${esc(f.name)}</div><div class="mt">${countIn(f)}</div></div>${chev}</button>
+      <div class="txt"><div class="nm">${!fid ? `<span class="cbadge">${esc(profName(company, f.companyId))}</span>` : ''}${esc(f.name)}</div><div class="mt">${countIn(f)}</div></div>${chev}</button>
       <button class="icon-btn" data-act="folder-info" data-id="${f.id}" aria-label="Opções">${I.more}</button></div>`).join('')
     + reps.map(p => reportRow(p, st[p.id], folders, {menu:true})).join('');
   const title = fid ? path[path.length - 1].name : 'Pastas';
@@ -716,7 +718,7 @@ async function renderMore(){
   app.innerHTML = `
   <main>
     <div class="ltitle"><div><h1>Mais</h1><p>Configurações e cópias de segurança</p></div></div>
-    <div class="group">${row('company', I.case, 'Dados da empresa', esc(company.name || 'Logo, contato e endereço do relatório'), 'blue')}
+    <div class="group">${row('company', I.case, 'Empresas e dados do relatório', 'Nome, logo, endereço, assinaturas e marca d’água de cada empresa', 'blue')}
       ${row('template', I.sheet, 'Baixar planilha modelo', 'Exemplo de colunas para importar')}</div>
     <div class="sec"><h2>Aplicativo</h2></div>
     <div class="group">${row('version', I.save, 'Versão ' + APP_VERSION, 'Atualizada em ' + APP_DATE + ' · toque para verificar', 'blue')}
@@ -1771,7 +1773,7 @@ async function makeReport(o){
     const {jsPDF} = window.jspdf; const doc = new jsPDF({unit:'mm', format:'a4', compress:true});
     const W = 210, H = 297, M = 14, CW = W - 2 * M;
     const NAVY = [15, 39, 71], AMB = [245, 179, 1], MUT = [90, 101, 115], LN = [223, 227, 232], RED = [211, 58, 44], GRN = [31, 157, 87], ORG = [217, 119, 6], BLU = [29, 92, 255];
-    const company = await getCompany(), eqs = await collectReport(o.ids), GR = await grilles();
+    const eqs = await collectReport(o.ids), company = await getCompany(eqs[0]?.path[0]?.companyId), GR = await grilles();
     if (!eqs.length) { hideToast(); toast('Nenhum equipamento para incluir.'); return; }
     const img = async ph => { try { return ph.src || (ph.blob ? await blobToDataURL(ph.blob) : null) || ph.tsrc || null; } catch (e) { return ph.tsrc || null; } };
     const phOf = (e, it) => (it.photoIds || []).map(id => e.phs.get(id)).filter(Boolean);
@@ -2016,9 +2018,42 @@ async function wsSheet(){
     });
   });
 }
+
+/* ---------- empresas por pasta (identidade do relatório) ---------- */
+const profName = (c, id) => !id || id === 'main' ? (c.name || 'Empresa principal') : ((c.profiles || []).find(p => p.id === id)?.name || '—');
+async function profilesSheet(){
+  const c = await getCompany(); const list = [{id:'main', name: c.name || 'Empresa principal'}, ...(c.profiles || [])];
+  const s = openSheet(`<h2>Empresas</h2><p class="hint" style="margin:-6px 0 12px">Cada empresa tem nome, logo, endereço, assinaturas e marca d’água próprios. Ao criar uma pasta de cliente, você escolhe a empresa, e os relatórios daquela pasta saem com a identidade dela.</p>
+    ${list.map(p => `<button class="menu-item" data-pf="${p.id}">${I.case}<span>${esc(p.name)}${p.id === 'main' ? ' <span class="hint">(principal)</span>' : ''}</span></button>`).join('')}
+    <button class="btn primary block" data-c="new" style="margin-top:12px">${I.plus}Nova empresa</button>`);
+  s.addEventListener('click', ev => {
+    const b = ev.target.closest('[data-pf]'); if (b) { closeSheet(); companySheet(b.dataset.pf); return; }
+    if (ev.target.closest('[data-c="new"]')) promptSheet('Nova empresa', 'Nome da empresa', '', 'Criar', async name => {
+      const base = (await getSetting('company')) || {}, id = uid();
+      base.profiles = [...(base.profiles || []), {id, name}]; await setSetting('company', base); companySheet(id); });
+  });
+}
+async function folderCompanySheet(fid){
+  const c = await getCompany(), list = [{id:'main', name: c.name || 'Empresa principal'}, ...(c.profiles || [])];
+  const f = fid ? await get('folders', fid) : null;
+  const s = openSheet(`<h2>${f ? 'Empresa da pasta' : 'Nova pasta de cliente'}</h2>
+    ${f ? `<p class="hint" style="margin:-6px 0 12px">${esc(f.name)}</p>` : `<div class="field"><label class="lb" for="nf-name">Nome da pasta</label><input class="inp" id="nf-name" placeholder="Ex.: REDE D'OR SÃO LUIZ"></div>`}
+    <div class="field"><label class="lb" for="nf-co">Empresa responsável pelos relatórios</label><select class="inp" id="nf-co">${list.map(p => `<option value="${p.id}" ${(f?.companyId || 'main') === p.id ? 'selected' : ''}>${esc(p.name)}</option>`).join('')}</select></div>
+    <button class="text-btn" data-c="co">${I.plus}Cadastrar outra empresa</button>
+    <button class="btn primary block" data-c="ok" style="margin-top:10px">${f ? 'Salvar' : 'Criar pasta'}</button>`);
+  if (!f) setTimeout(() => $('#nf-name', s)?.focus(), 50);
+  s.addEventListener('click', async ev => {
+    if (ev.target.closest('[data-c="co"]')) { closeSheet(); profilesSheet(); return; }
+    if (!ev.target.closest('[data-c="ok"]')) return;
+    const co = $('#nf-co', s).value;
+    if (f) { f.companyId = co; await put('folders', f); }
+    else { const name = $('#nf-name', s).value.trim(); if (!name) { $('#nf-name', s).focus(); return; } await put('folders', {id: uid(), name, parentId: null, companyId: co, createdAt: Date.now()}); }
+    closeSheet(); render();
+  });
+}
 /* ---------- empresa ---------- */
-async function companySheet(){
-  const c = await getCompany();
+async function companySheet(pid){
+  const c = await getCompany(pid);
   let logo = c.logo || null;
   const s = openSheet(`<h2>Dados da empresa</h2>
     <p class="hint" style="margin:-6px 0 14px">Ficam salvos no aparelho e aparecem no cabeçalho e no rodapé de todos os relatórios.</p>
@@ -2065,10 +2100,13 @@ async function companySheet(){
     if (b.dataset.c === 'wm') { $('#in-wm').value = ''; $('#in-wm').click(); return; }
     if (b.dataset.c === 'nowm') { wmI = null; showWm(); return; }
     if (b.dataset.c === 'yes') {
-      await setSetting('company', {name: $('#c-name', s).value.trim(), contact: $('#c-contact', s).value.trim(), phone: $('#c-phone', s).value.trim(),
+      const vals = {name: $('#c-name', s).value.trim(), contact: $('#c-contact', s).value.trim(), phone: $('#c-phone', s).value.trim(),
         email: $('#c-email', s).value.trim(), address: $('#c-addr', s).value.trim(), logo,
         execName: $('#c-en', s).value.trim(), execReg: $('#c-er', s).value.trim(), verName: $('#c-vn', s).value.trim(), verReg: $('#c-vr', s).value.trim(),
-        instruments: $('#c-inst', s).value.trim(), wm: wmI ? {...wmI, ...wmV()} : null});
+        instruments: $('#c-inst', s).value.trim(), wm: wmI ? {...wmI, ...wmV()} : null};
+      const base = (await getSetting('company')) || {};
+      if (pid && pid !== 'main') { base.profiles = (base.profiles || []).map(p => p.id === pid ? {...p, ...vals} : p); await setSetting('company', base); }
+      else await setSetting('company', {...base, ...vals});
       toast('Dados da empresa salvos.'); render();
     }
     closeSheet();
@@ -2450,8 +2488,8 @@ document.addEventListener('click', async e => {
     case 'open-item': go({name:'item', id}); break;
     case 'goto': if (id) go({name:'item', id}); break;
     case 'filter': view.filter = b.dataset.f; render(); break;
-    case 'company': companySheet(); break;
-    case 'new-folder': { const fid = await curFolder();
+    case 'company': profilesSheet(); break;
+    case 'new-folder': { const fid = await curFolder(); if (!fid) { folderCompanySheet(null); break; }
       promptSheet('Nova pasta', 'Nome da pasta', '', 'Criar pasta', async name => { await put('folders', {id: uid(), name, parentId: fid, createdAt: Date.now()}); render(); }); break; }
     case 'new-report': { const fid = await curFolder();
       newReportSheet(fid); break; }
@@ -2478,6 +2516,7 @@ document.addEventListener('click', async e => {
         {icon:'save', label:'Baixar fotos da equipe (pasta toda)', run: async () => dlTeam(await folderProjectIds(f.id))},
         {icon:'img', label: f.logo ? 'Trocar logo do cliente' : 'Logo do cliente (aparece no relatório)', run: () => { flogoTarget = f.id; $('#in-flogo').value = ''; $('#in-flogo').click(); }},
         ...(f.logo ? [{icon:'trash', label:'Remover logo do cliente', run: async () => { delete f.logo; await put('folders', f); toast('Logo removido.'); }}] : []),
+        ...(!f.parentId ? [{icon:'case', label:'Empresa responsável pela pasta', run: () => folderCompanySheet(f.id)}] : []),
         {icon:'edit', label:'Renomear pasta', run: () => promptSheet('Renomear pasta', 'Nome da pasta', f.name, 'Salvar', async v => { f.name = v; await put('folders', f); render(); })},
         {icon:'move', label:'Mover para…', run: () => moveSheet('folder', f.id)},
         {icon:'trash', label:'Excluir pasta', danger:true, run: () => confirmSheet('Excluir pasta?', `“${f.name}”, as subpastas, os relatórios e as fotos dentro dela serão apagados deste aparelho.`, 'Excluir', async () => {
