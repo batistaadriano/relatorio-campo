@@ -387,7 +387,7 @@ async function os(name, mode = 'readonly'){ const d = await idb(); return d.tran
 const getAll = async n => P((await os(n)).getAll());
 const byIdx = async (n, idx, v) => P((await os(n)).index(idx).getAll(v));
 const get = async (n, k) => P((await os(n)).get(k));
-const APP_VERSION = 15, APP_DATE = '11/11/2026';
+const APP_VERSION = 16, APP_DATE = '11/11/2026';
 const SYNCED = ['folders', 'projects', 'items', 'photos'];
 const rawPut = async (n, v) => P((await os(n, 'readwrite')).put(v));
 const put = async (n, v) => { if (SYNCED.includes(n) && v) v.mt = Date.now(); let r; try { r = await rawPut(n, v); } catch (e) { setSaveState('err'); throw e; } cloudPush(n, [v]); if (n !== 'settings') setSaveState('ok'); return r; };
@@ -1361,7 +1361,7 @@ async function ensureStepItem(pid, key){
   let it = items.find(x => x.step === key); if (it) return it;
   const p = await get('projects', pid);
   const vz = vazParse(key);
-  const s = vz && vz.t ? {t: `${VZT[vz.t]} ${vz.n}`, order: 1 + vz.g / 100 + Object.keys(VZT).indexOf(vz.t) / 1000 + vz.n / 100000}
+  const s = (key || '').startsWith('vamb_') ? {t:'Foto do ambiente', order: 1 + (+key.slice(5)) / 100 + .0001} : vz && vz.t ? {t: `${VZT[vz.t]} ${vz.n}`, order: 1 + vz.g / 100 + Object.keys(VZT).indexOf(vz.t) / 1000 + vz.n / 100000}
     : guideSteps(items.concat([{step: key}]), p).find(x => x.key === key) || {t: key, order: 500};
   it = await createItem(pid, {title: s.t, desc: ''});
   Object.assign(it, {step: key, kind:'step', order: s.order}); if (vz && vz.t) it.fields = {tipo: VZT[vz.t], grelha: p.lastGrille || undefined};
@@ -1695,6 +1695,10 @@ async function renderVazGroup(p, items, st, i, s){
     }
     html += `<button class="btn ghost block" data-act="add-meas" data-g="${g}" data-t="${t}" style="margin-bottom:12px">${I.plus}Mais uma medição de ${VZT[t].toLowerCase()}</button></div>`;
   }
+  const ambIt = items.find(x => x.step === 'vamb_' + g), ambPhs = ambIt ? (await Promise.all((ambIt.photoIds || []).map(id => get('photos', id)))).filter(Boolean) : [];
+  const ambHtml = `<div class="panel"><span class="lb">Foto do ambiente <span style="font-weight:400;color:var(--muted)">opcional</span></span>
+    ${ambPhs.length ? `<div class="gph">${ambPhs.map(ph => `<div class="gphi"><img src="${phSrc(ph, true)}" alt="" data-act="phedit" data-id="${ph.id}"><span>${esc(ph.note || '')}</span></div>`).join('')}</div>` : ''}
+    <div class="row"><button class="btn ghost" data-act="cam-step" data-key="vamb_${g}">${I.cam}Tirar foto</button><button class="btn ghost" data-act="gal-step" data-key="vamb_${g}">${I.img}Galeria</button></div></div>`;
   const extra = ['exa', 'ext'].filter(t => !types.includes(t));
   app.innerHTML = `
   <header class="top"><button class="icon-btn" data-act="open-project" data-id="${p.id}" aria-label="Voltar">${I.back}</button>
@@ -1705,6 +1709,7 @@ async function renderVazGroup(p, items, st, i, s){
     <div class="gsec">Vazão de ar · <span class="st-${state}">${ST_LABEL[state]}</span></div><div class="savechip" data-save></div>
     <div class="gq">Medição de vazão por ambiente. Registre projeto, medida e as fotos das leituras de cada terminal. Leituras negativas (retorno, exaustão) são aceitas: o cálculo usa o valor absoluto.</div>
     <div class="field"><label class="lb">Ambiente</label><input class="inp ambname" data-g="${g}" value="${esc(p.vazAmb?.[g] || '')}" placeholder="Ex.: Sala 1203 / Recepção"></div>
+    ${ambHtml}
     ${html}
     ${extra.length ? `<div class="row" style="margin-bottom:10px">${extra.map(t => `<button class="btn ghost" data-act="add-type" data-g="${g}" data-t="${t}">${I.plus}${VZT[t]}</button>`).join('')}</div>` : ''}
     <button class="btn ghost block" data-act="add-amb" style="margin-bottom:10px">${I.plus}Adicionar outro ambiente</button>
@@ -1940,7 +1945,7 @@ async function makeReport(o){
           doc.setDrawColor(...LN); doc.rect(x, yy, cw, chh + 16); doc.setFillColor(238, 241, 244); doc.rect(x, yy, cw, chh, 'F');
           fit(await img(ph), x, yy, cw, chh, ph.w, ph.h);
           const pw = pill(labels.get(ph.id), x + 3, yy + chh + 6, NAVY);
-          T(it.title || '', x + 5 + pw, yy + chh + 6, {s:9.5, b:true, w: cw - pw - 8, n:1});
+          T((it.step || '').startsWith('vamb_') ? 'Ambiente · ' + (e.p.vazAmb?.[it.step.slice(5)] || it.step.slice(5)) : (it.title || ''), x + 5 + pw, yy + chh + 6, {s:9.5, b:true, w: cw - pw - 8, n:1});
           const extra = [phRead(ph), itemSummary(e.p, it)].filter(Boolean).join(' · ');
           if (extra) T(extra, x + 3, yy + chh + 12, {s:8.5, c:MUT, w: cw - 6, n:1});
           slot++;
