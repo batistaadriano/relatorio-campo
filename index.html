@@ -294,6 +294,8 @@ textarea.inp{min-height:120px;resize:vertical;line-height:1.5}
 .eqtabs button{min-height:40px;border-radius:10px;font-size:13px;font-weight:700;color:var(--muted);padding:0 6px;line-height:1.15}
 .eqtabs button[aria-pressed="true"]{background:var(--accent);color:#fff}
 .vdevrow{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:2px 0 12px}.vdevrow .text-btn{margin-left:auto}
+.map-wrap .map-pin.st-ok{background:#16A34A}.map-wrap .map-pin.st-warn{background:#D97706}.map-wrap .map-pin.st-bad{background:#E11D48}
+.map-pin small{position:absolute;left:100%;top:50%;transform:translateY(-50%);margin-left:6px;background:rgba(17,19,23,.9);color:#fff;font-size:11px;font-weight:700;padding:3px 7px;border-radius:7px;white-space:nowrap;pointer-events:none;border:1px solid rgba(255,255,255,.15)}
 .hidden{display:none!important}
 .ptitle{font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--accent-text);margin:0 0 12px}
 .tseg{grid-template-columns:repeat(auto-fit,minmax(90px,1fr))}
@@ -430,7 +432,7 @@ async function os(name, mode = 'readonly'){ const d = await idb(); return d.tran
 const getAll = async n => P((await os(n)).getAll());
 const byIdx = async (n, idx, v) => P((await os(n)).index(idx).getAll(v));
 const get = async (n, k) => P((await os(n)).get(k));
-const APP_VERSION = 21, APP_DATE = '20/11/2026';
+const APP_VERSION = 22, APP_DATE = '20/11/2026';
 const SYNCED = ['folders', 'projects', 'items', 'photos'];
 const rawPut = async (n, v) => P((await os(n, 'readwrite')).put(v));
 const put = async (n, v) => { if (SYNCED.includes(n) && v) v.mt = Date.now(); let r; try { r = await rawPut(n, v); } catch (e) { setSaveState('err'); throw e; } cloudPush(n, [v]); if (n !== 'settings') setSaveState('ok'); return r; };
@@ -1832,6 +1834,7 @@ async function openPlantMap(pid, opts = {}){
   if (!ps.length) { toast('Nenhuma planta nesta obra. Em Pastas, toque nos ⋮ da obra → Plantas do projeto.', 5000); return; }
   const allProjects = await getAll('projects');
   const folderEqs = fid ? allProjects.filter(x => pid0(x) === fid).sort(byName) : [p0];
+  const allItems = (await Promise.all(folderEqs.map(e => byIdx('items', 'projectId', e.id)))).flat();
   let activePid = p0.id;
   let items = (await byIdx('items', 'projectId', activePid)).sort(byOrder);
   let curPlant = ps.find(x => x.id === (opts.plantId || p0.mapPlantId)) || ps[0];
@@ -1901,6 +1904,7 @@ async function openPlantMap(pid, opts = {}){
       const eq = folderEqs.find(x => x.id === id);
       return eq ? `<span><i style="background:${eqColor(id)}"></i>${esc(eq.name)}</span>` : '';
     }).join('');
+    legEl.innerHTML += `<span><i style="background:#16A34A;border-radius:50%"></i>OK (≤10%)</span><span><i style="background:#D97706;border-radius:50%"></i>Atenção (10–20%)</span><span><i style="background:#E11D48;border-radius:50%"></i>Fora (>20%)</span>`;
     legEl.style.display = legEl.innerHTML ? 'flex' : 'none';
   }
 
@@ -1911,8 +1915,9 @@ async function openPlantMap(pid, opts = {}){
     ];
     pinsEl.innerHTML = allPins.map((pin, idx) => {
       const lbl = pin.label || pin.code || String(idx + 1);
-      const cls = pin.t || '';
-      return `<button type="button" class="map-pin ${cls} ${pin.id === selPinId ? 'sel' : ''}" data-pin="${pin.id}" style="left:${pin.x * 100}%;top:${pin.y * 100}%">${esc(lbl)}</button>`;
+      const pm = pin.key ? pinMeas(allItems.find(i => i.projectId === pin.pid && i.step === pin.key)) : {v: null, lvl: 'none'};
+      const cls = (pin.t || '') + (pm.lvl !== 'none' ? ' st-' + pm.lvl : '');
+      return `<button type="button" class="map-pin ${cls} ${pin.id === selPinId ? 'sel' : ''}" data-pin="${pin.id}" style="left:${pin.x * 100}%;top:${pin.y * 100}%">${esc(lbl)}${pm.v !== null ? `<small>${fmtN(pm.v, 0)} m³/h${pm.d !== null ? ' · ' + (pm.d > 0 ? '+' : '') + pm.d.toFixed(1).replace('.', ',') + '%' : ''}</small>` : ''}</button>`;
     }).join('');
 
     if (placeKey) { hintEl.textContent = 'Toque na planta no local deste terminal'; actEl.innerHTML = '<button class="btn ghost" data-k="cancel-key">Cancelar</button>'; return; }
@@ -2441,7 +2446,10 @@ async function makeReport(o){
       doc.addImage(finalPlantUrl, /^data:image\/png/.test(finalPlantUrl) ? 'PNG' : 'JPEG', ox, oy, ww, hh, undefined, 'FAST');
       pins.forEach(pin => {
         const px = ox + pin.x * ww, py = oy + pin.y * hh;
-        const col = PIN_TCOL[pin.t] || BLU;
+        const eqx = eqs.find(x => x.p.id === pin.pid), pm = pinMeas(eqx?.items.find(i => i.step === pin.key));
+        const col = pm.lvl !== 'none' ? ST_RGB[pm.lvl] : (PIN_TCOL[pin.t] || BLU);
+        if (pm.v !== null) { const tl = fmtN(pm.v, 0) + ' m³/h'; doc.setFontSize(6); doc.setFont('helvetica', 'bold'); const tw = doc.getTextWidth(pdfSafe(tl)) + 2.4;
+          doc.setFillColor(255, 255, 255); doc.setDrawColor(...col); doc.setLineWidth(.3); doc.roundedRect(px + 4, py - 2.2, tw, 3.8, 1, 1, 'FD'); T(tl, px + 5.2, py + .6, {s:6, b:true, c:[29, 34, 41]}); }
         doc.setFillColor(...col); doc.setDrawColor(255, 255, 255); doc.setLineWidth(.5);
         doc.circle(px, py, 3.4, 'FD');
         T(pin.label || '', px, py + 1.1, {s:6.5, b:true, c:[255, 255, 255], a:'center'});
@@ -2467,6 +2475,9 @@ async function makeReport(o){
         T(nome, txLeg + 5.5, ly, {s:8.5, c:MUT});
         txLeg += doc.getTextWidth(pdfSafe(nome)) + 14;
       });
+      ly += 6; let sx = M;
+      [['OK (até 10%)', ST_RGB.ok], ['Atenção (10 a 20%)', ST_RGB.warn], ['Fora (acima de 20%)', ST_RGB.bad]].forEach(([nome, col]) => {
+        doc.setFillColor(...col); doc.circle(sx + 1.8, ly - 1.2, 2.2, 'F'); T(nome, sx + 5.5, ly, {s:8.5, c:MUT}); sx += doc.getTextWidth(pdfSafe(nome)) + 14; });
     }
 
     /* equipamentos */
@@ -2742,6 +2753,13 @@ document.addEventListener('input', e => {
   const k = el.dataset.key, q = n => document.querySelector(`.gf[data-key="${k}"][data-k="${n}"]`)?.value;
   const pill = document.querySelector(`[data-dev="${k}"]`); if (pill) pill.outerHTML = devPill(q('proj'), q('v'), k);
 });
+
+/* ---------- status da medição no mapa (desvio) ---------- */
+const ST_RGB = {ok:[22, 163, 74], warn:[217, 119, 6], bad:[225, 29, 72]};
+function pinMeas(it){
+  const f = it?.fields || {}, a = numVal(f.proj), m = numVal(f.v), v = m === null ? null : Math.abs(m), d = a && v !== null ? (v - a) / a * 100 : null;
+  return {v, d, lvl: d === null ? 'none' : Math.abs(d) <= 10 ? 'ok' : Math.abs(d) <= 20 ? 'warn' : 'bad'};
+}
 /* ---------- empresa ---------- */
 async function companySheet(pid){
   const c = await getCompany(pid);
