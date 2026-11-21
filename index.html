@@ -290,6 +290,10 @@ textarea.inp{min-height:120px;resize:vertical;line-height:1.5}
 .mbadge.t-ins{background:#2563EB}.mbadge.t-ret{background:#16A34A}.mbadge.t-exa{background:#E11D48}.mbadge.t-ext{background:#D97706}.mbadge.t-hid{background:#0891B2}
 .mtxt{flex:1;min-width:0}.mtxt b{display:block;font-size:14px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.mtxt>span{font-size:12px;color:var(--muted)}.mtxt em{color:var(--warn);font-style:normal}
 .mdev{font-weight:800;font-size:13px;padding:5px 9px;border-radius:9px;flex:none}.d-ok{background:var(--ok-soft);color:var(--ok)}.d-warn{background:var(--warn-soft);color:var(--warn)}.d-bad{background:var(--bad-soft);color:var(--bad)}.d-none{background:var(--surface2);color:var(--muted)}
+.eqtabs{position:sticky;top:calc(56px + env(safe-area-inset-top,0px));z-index:4;display:grid;grid-template-columns:1fr 1.25fr 1fr;gap:4px;padding:6px 10px;background:var(--surface);border-bottom:1px solid var(--line)}
+.eqtabs button{min-height:40px;border-radius:10px;font-size:13px;font-weight:700;color:var(--muted);padding:0 6px;line-height:1.15}
+.eqtabs button[aria-pressed="true"]{background:var(--accent);color:#fff}
+.vdevrow{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:2px 0 12px}.vdevrow .text-btn{margin-left:auto}
 .hidden{display:none!important}
 .ptitle{font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--accent-text);margin:0 0 12px}
 .tseg{grid-template-columns:repeat(auto-fit,minmax(90px,1fr))}
@@ -426,7 +430,7 @@ async function os(name, mode = 'readonly'){ const d = await idb(); return d.tran
 const getAll = async n => P((await os(n)).getAll());
 const byIdx = async (n, idx, v) => P((await os(n)).index(idx).getAll(v));
 const get = async (n, k) => P((await os(n)).get(k));
-const APP_VERSION = 20, APP_DATE = '20/11/2026';
+const APP_VERSION = 21, APP_DATE = '20/11/2026';
 const SYNCED = ['folders', 'projects', 'items', 'photos'];
 const rawPut = async (n, v) => P((await os(n, 'readwrite')).put(v));
 const put = async (n, v) => { if (SYNCED.includes(n) && v) v.mt = Date.now(); let r; try { r = await rawPut(n, v); } catch (e) { setSaveState('err'); throw e; } cloudPush(n, [v]); if (n !== 'settings') setSaveState('ok'); return r; };
@@ -804,6 +808,7 @@ async function renderProject(){
   <header class="top"><button class="icon-btn" data-act="folder" data-id="${pid0(p) || ''}" aria-label="Voltar">${I.back}</button>
     <h1>${esc(p.name)}</h1>
     <button class="icon-btn" data-act="project-menu" data-id="${p.id}" aria-label="Mais opções">${I.more}</button></header>
+  ${eqTabs(p, 'resumo')}
   <main>
     <div class="path"><button data-act="tab" data-tab="folder">${esc((await getCompany()).name.split(' ')[0] || 'Início')}</button>${path.map(x => `${I.right}<button data-act="folder" data-id="${x.id}">${esc(x.name)}</button>`).join('')}</div>
     ${guideBar(p, items)}
@@ -1452,6 +1457,7 @@ async function renderGuide(){
   <header class="top"><button class="icon-btn" data-act="open-project" data-id="${p.id}" aria-label="Voltar">${I.back}</button>
     <h1>${esc(p.name)} · ${esc(s.t)}<span class="sub">Passo ${i + 1} de ${st.length} · ${esc(s.sec)}</span></h1>
     <button class="icon-btn" data-act="pend-new" aria-label="Registrar pendência">${I.flag}</button></header>
+  ${eqTabs(p, 'insp')}
   <main>
     <div class="gprog"><i style="width:${Math.round(done / st.length * 100)}%"></i></div>
     <div class="gsec">${esc(s.sec)} · <span class="st-${state}">${ST_LABEL[state]}</span></div><div class="savechip" data-save></div>
@@ -1594,16 +1600,16 @@ function evalFormula(f, vars){
   try { const v = Function('V', 'A', 'C', 'H', 'K', 'P', 'sqrt', '"use strict";return (' + src + ');')(
     vars.V ?? NaN, vars.A ?? NaN, vars.C ?? NaN, vars.H ?? NaN, vars.K ?? 1, vars.P ?? NaN, Math.sqrt); return isFinite(v) ? v : null; } catch (e) { return null; }
 }
-function calcResult(g, phs){
+function calcResult(g, phs, velTyped){
   const val = u => phs.filter(p => p.ru === u && numVal(p.rv) !== null).map(p => Math.abs(numVal(p.rv)));
   const ms = val('m/s'), pa = val('Pa'), mh = val('m³/h'), avg = a => a.length ? a.reduce((x, y) => x + y) / a.length : null;
-  const vars = {V: avg(ms), P: avg(pa), A: numVal(g?.A), C: numVal(g?.C), H: numVal(g?.H), K: numVal(g?.K) ?? 1};
+  const vars = {V: avg(ms) ?? (velTyped === null || velTyped === undefined ? null : Math.abs(velTyped)), P: avg(pa), A: numVal(g?.A), C: numVal(g?.C), H: numVal(g?.H), K: numVal(g?.K) ?? 1};
   const q = g ? evalFormula(g.formula, vars) : null;
   return {q, vars, ms, pa, mh, sum: mh.length ? mh.reduce((x, y) => x + y) : null};
 }
 async function calcHtml(p, it, phs, key){
   const gs = await grilles(), gid = it?.fields?.grelha || p.lastGrille || gs[0]?.id, g = gs.find(x => x.id === gid);
-  const r = calcResult(g, phs), v = r.vars, adj = numVal(it?.fields?.adj ?? p.lastAdj) || 0, fa = 1 + adj / 100;
+  const r = calcResult(g, phs, numVal(it?.fields?.vel)), v = r.vars, adj = numVal(it?.fields?.adj ?? p.lastAdj) || 0, fa = 1 + adj / 100;
   const ln = [r.ms.length ? `Média de ${r.ms.length} leitura(s): <b>${fmtN(v.V)} m/s</b>` : '', r.pa.length ? `Pressão média: <b>${fmtN(v.P)} Pa</b>` : ''].filter(Boolean).join(' · ');
   return `<div class="panel"><span class="lb">Calculadora de vazão</span>
     <select class="inp" data-act-change="grelha" data-key="${key}">${gs.map(x => `<option value="${x.id}" ${x.id === gid ? 'selected' : ''}>${esc(x.name)}</option>`).join('')}</select>
@@ -1834,6 +1840,7 @@ async function openPlantMap(pid, opts = {}){
   let undoStack = [];
   let selPinId = opts.pinId || null;
   let placingItemId = opts.placeItemId || null;
+  let placeKey = opts.placeKey || null;
   let wallMask = null;
 
   const eqColor = id => MAP_COLORS[Math.max(0, folderEqs.findIndex(x => x.id === id)) % MAP_COLORS.length];
@@ -1908,6 +1915,7 @@ async function openPlantMap(pid, opts = {}){
       return `<button type="button" class="map-pin ${cls} ${pin.id === selPinId ? 'sel' : ''}" data-pin="${pin.id}" style="left:${pin.x * 100}%;top:${pin.y * 100}%">${esc(lbl)}</button>`;
     }).join('');
 
+    if (placeKey) { hintEl.textContent = 'Toque na planta no local deste terminal'; actEl.innerHTML = '<button class="btn ghost" data-k="cancel-key">Cancelar</button>'; return; }
     const sel = allPins.find(x => x.id === selPinId);
     if (mode === 'poly') {
       hintEl.textContent = `Cantos marcados: ${polyDraft.length} · toque nos cantos da sala`;
@@ -2069,6 +2077,14 @@ async function openPlantMap(pid, opts = {}){
     if (moved || ptrs.size > 0 || e.target.closest('.map-hud') || e.target.closest('.map-leg')) return;
     const pt = clientToNorm(e.clientX, e.clientY);
 
+    if (placeKey) {
+      const it = await ensureStepItem(activePid, placeKey), vz = vazParse(placeKey), t = vz?.t || 'ins';
+      const label = it.fields?.pin || (PIN_TPFX[t] + (plantPins().filter(x => x.pid === activePid && x.t === t).length + 1));
+      curPlant.pins = plantPins().filter(x => !(x.key === placeKey && x.pid === activePid));
+      curPlant.pins.push({id: uid(), x: pt.x, y: pt.y, t, pid: activePid, key: placeKey, label});
+      it.fields = {...(it.fields || {}), pin: label}; await put('items', it); await put('photos', curPlant);
+      placeKey = null; renderPins(); toast(`Ponto ${label} marcado na planta.`); return;
+    }
     if (placingItemId) {
       const p = curProj(); p.pins = projectPins(p).filter(x => x.itemId !== placingItemId);
       const np = {id: uid(), plantId: curPlant.id, itemId: placingItemId, x: pt.x, y: pt.y, note: ''};
@@ -2131,6 +2147,7 @@ async function openPlantMap(pid, opts = {}){
     if (k === 'zin') { zoomAt(1.3); return; }
     if (k === 'zout') { zoomAt(0.77); return; }
     if (k === 'zfit') { fitView(); return; }
+    if (k === 'cancel-key') { placeKey = null; renderPins(); return; }
     if (k === 'clear-poly') { polyDraft = []; redrawAreas(); renderPins(); return; }
     if (k === 'close-poly' && polyDraft.length >= 3) {
       const areas = plantAreas();
@@ -2211,12 +2228,16 @@ async function renderVazGroup(p, items, st, i, s){
       const phs = it ? (await Promise.all((it.photoIds || []).map(id => get('photos', id)))).filter(Boolean) : [], ref = `data-key="${key}"`;
       html += `<div class="panel">${cnt > 1 ? `<span class="lb">${esc(fl.local || 'Medição ' + n)} · <span class="st-${stepState(it)}">${ST_LABEL[stepState(it)]}</span></span>` : `<span class="lb st-${stepState(it)}">${ST_LABEL[stepState(it)]}</span>`}
         <div class="field"><label class="lb">Local do terminal <span style="font-weight:400;color:var(--muted)">opcional</span></label><input class="inp gf" ${ref} data-k="local" value="${esc(fl.local || '')}" placeholder="Ex.: difusor próximo à janela"></div>
+        <div class="field"><span class="lb">Método de medição</span><div class="seg tseg">${[['bal', 'Balômetro (m³/h direto)'], ['ane', 'Anemômetro (m/s × área)']].map(([k, l]) => `<button data-act="gseg" ${ref} data-k="met" data-v="${k}" aria-pressed="${(fl.met || 'bal') === k}">${l}</button>`).join('')}</div></div>
+        ${fl.met === 'ane' ? `<div class="field"><label class="lb">Velocidade média (m/s) <span style="font-weight:400;color:var(--muted)">ou registre nas fotos</span></label><input class="inp gf" ${ref} data-k="vel" inputmode="decimal" value="${esc(fl.vel || '')}" placeholder="Ex.: 2,55"></div>` : ''}
         <div class="two"><div class="field"><label class="lb">Vazão de projeto (m³/h)</label><input class="inp gf" ${ref} data-k="proj" inputmode="decimal" value="${esc(fl.proj || '')}" placeholder="Pode preencher depois"></div>
         <div class="field"><label class="lb">Vazão medida (m³/h)</label><input class="inp gf" ${ref} data-k="v" inputmode="decimal" value="${esc(fl.v || '')}" placeholder="Pode preencher depois"></div></div>
+        <div class="vdevrow"><span class="lb" style="margin:0">Desvio calculado</span>${devPill(fl.proj, fl.v, key)}
+          <button class="text-btn" data-act="pin-meas" ${ref}>📍 ${fl.pin ? 'Na planta (' + esc(fl.pin) + ')' : 'Marcar na planta'}</button></div>
         <span class="lb">Fotos das leituras ${phs.length ? `(${phs.length})` : ''}</span>
         ${phs.length ? `<div class="gph">${phs.map(ph => `<div class="gphi"><img src="${phSrc(ph, true)}" alt="" data-act="phedit" data-id="${ph.id}"><span>${esc(phRead(ph) || 'Toque para registrar')}</span></div>`).join('')}</div>` : ''}
         <div class="row"><button class="btn ghost" data-act="cam-step" ${ref}>${I.cam}Tirar foto</button><button class="btn ghost" data-act="gal-step" ${ref}>${I.img}Galeria</button></div></div>
-        ${phs.length ? await calcHtml(p, it, phs, key) : ''}`;
+        ${phs.length || fl.met === 'ane' ? await calcHtml(p, it, phs, key) : ''}`;
     }
     html += `<button class="btn ghost block" data-act="add-meas" data-g="${g}" data-t="${t}" style="margin-bottom:12px">${I.plus}Mais uma medição de ${VZT[t].toLowerCase()}</button></div>`;
   }
@@ -2229,6 +2250,7 @@ async function renderVazGroup(p, items, st, i, s){
   <header class="top"><button class="icon-btn" data-act="open-project" data-id="${p.id}" aria-label="Voltar">${I.back}</button>
     <h1>${esc(p.name)} · ${esc(s.t)}<span class="sub">Passo ${i + 1} de ${st.length} · Vazão de ar</span></h1>
     <button class="icon-btn" data-act="pend-new" aria-label="Registrar pendência">${I.flag}</button></header>
+  ${eqTabs(p, 'insp')}
   <main>
     <div class="gprog"><i style="width:${Math.round(done / st.length * 100)}%"></i></div>
     <div class="gsec">Vazão de ar · <span class="st-${state}">${ST_LABEL[state]}</span></div><div class="savechip" data-save></div>
@@ -2701,6 +2723,25 @@ function resumoHtml(p, items, mf){
       <span class="mdev d-${lvl(x.dev)}">${fmt(x.dev)}</span></button>`).join('') || '<p class="hint" style="padding:14px;margin:0">Nenhuma medição neste filtro.</p>'}</div>
     <div class="sec"><h2>Itens e fotos</h2></div>`;
 }
+
+/* ---------- abas do equipamento e desvio na hora ---------- */
+document.addEventListener('change', async e => { const el = e.target; if (el.classList && el.classList.contains('gf') && el.dataset.k === 'vel') { await saveGuideField(el); render(); } });
+function eqTabs(p, active){
+  if (!tplOf(p).guided) return '';
+  return `<nav class="eqtabs"><button data-act="open-project" data-id="${p.id}" aria-pressed="${active === 'resumo'}">Resumo</button>
+    <button data-act="${active === 'insp' ? 'noop' : 'guide'}" aria-pressed="${active === 'insp'}">Inspeção &amp; medições</button>
+    <button data-act="map-tab" data-id="${p.id}" aria-pressed="false">Planta (mapa)</button></nav>`;
+}
+function devPill(proj, v, key){
+  const a = numVal(proj), m = numVal(v), b = m === null ? null : Math.abs(m), d = a && b !== null ? (b - a) / a * 100 : null;
+  const l = d === null ? 'none' : Math.abs(d) <= 10 ? 'ok' : Math.abs(d) <= 20 ? 'warn' : 'bad';
+  return `<span class="mdev d-${l}" data-dev="${key}">${d === null ? '—' : (d > 0 ? '+' : '') + d.toFixed(1).replace('.', ',') + '%'}</span>`;
+}
+document.addEventListener('input', e => {
+  const el = e.target; if (!el.classList.contains('gf') || !['proj', 'v'].includes(el.dataset.k) || !el.dataset.key) return;
+  const k = el.dataset.key, q = n => document.querySelector(`.gf[data-key="${k}"][data-k="${n}"]`)?.value;
+  const pill = document.querySelector(`[data-dev="${k}"]`); if (pill) pill.outerHTML = devPill(q('proj'), q('v'), k);
+});
 /* ---------- empresa ---------- */
 async function companySheet(pid){
   const c = await getCompany(pid);
@@ -3139,6 +3180,11 @@ document.addEventListener('click', async e => {
     case 'goto': if (id) go({name:'item', id}); break;
     case 'filter': view.filter = b.dataset.f; render(); break;
     case 'mfilter': view.mf = b.dataset.f; render(); break;
+    case 'noop': break;
+    case 'map-tab': await flushGuideFields(); openPlantMap(id || view.id); break;
+    case 'pin-meas': { await flushGuideFields(); const p0 = await get('projects', view.id), ps = await plantsUp(pid0(p0));
+      if (!ps.length) { toast('Adicione a planta na pasta (⋮ → Plantas do projeto) para marcar os pontos.', 5000); break; }
+      openPlantMap(view.id, {placeKey: b.dataset.key}); break; }
     case 'mopen': { const it = await get('items', id); if (!it) break; const p0 = await get('projects', it.projectId), its = await byIdx('items', 'projectId', p0.id);
       const v = vazParse(it.step), key = v ? 'vaz_' + v.g : it.step, k = guideSteps(its, p0).findIndex(s => s.key === key);
       if (k < 0) go({name:'item', id: it.id}); else go({name:'guide', id: p0.id, step: k}); break; }
