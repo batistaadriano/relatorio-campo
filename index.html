@@ -23,15 +23,15 @@
 }
 @media (prefers-color-scheme: dark){
   :root:not([data-theme="light"]){
-    --bg:#0E1116; --surface:#171B22; --surface2:#212733; --text:#E8ECF2; --muted:#94A0B1; --line:#283040;
-    --accent:#3D6EFF; --accent-2:#1F47C9; --accent-text:#86A6FF; --accent-soft:#1A2747;
+    --bg:#0A0F1C; --surface:#111A2E; --surface2:#1A2540; --text:#E6ECF5; --muted:#8C9AB3; --line:#22304D;
+    --accent:#2563EB; --accent-2:#1D4ED8; --accent-text:#7FA6FF; --accent-soft:#16264A;
     --ok:#34C46E; --ok-soft:#143022; --bad:#FF5A7A; --bad-soft:#3A1720; --warn:#F2A33A; --warn-soft:#3A2A12; --dim:#6B778A;
     --shadow:none; color-scheme:dark;
   }
 }
 :root[data-theme="dark"]{
-  --bg:#0E1116; --surface:#171B22; --surface2:#212733; --text:#E8ECF2; --muted:#94A0B1; --line:#283040;
-  --accent:#3D6EFF; --accent-2:#1F47C9; --accent-text:#86A6FF; --accent-soft:#1A2747;
+  --bg:#0A0F1C; --surface:#111A2E; --surface2:#1A2540; --text:#E6ECF5; --muted:#8C9AB3; --line:#22304D;
+  --accent:#2563EB; --accent-2:#1D4ED8; --accent-text:#7FA6FF; --accent-soft:#16264A;
   --ok:#34C46E; --ok-soft:#143022; --bad:#FF5A7A; --bad-soft:#3A1720; --warn:#F2A33A; --warn-soft:#3A2A12; --dim:#6B778A;
   --shadow:none; color-scheme:dark;
 }
@@ -278,6 +278,18 @@ textarea.inp{min-height:120px;resize:vertical;line-height:1.5}
 .gphi .text-btn{min-height:30px;padding:0}.calcout{font-size:16px;margin:8px 0}
 .vblk-t{font-weight:700;font-size:15px;margin:16px 2px 8px;color:var(--accent-text);text-transform:uppercase;letter-spacing:.04em}
 .cbadge{display:inline-block;font-size:11px;font-weight:700;padding:1px 7px;border-radius:6px;background:var(--accent-soft);color:var(--accent-text);margin-right:8px;vertical-align:1px}
+.kpis{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:6px}
+.kpi{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:14px;display:flex;flex-direction:column;gap:6px;box-shadow:var(--shadow)}
+.kpi i{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;margin-bottom:4px}.kpi i svg{width:18px;height:18px}
+.kpi b{font-size:25px;font-weight:800;line-height:1.05;letter-spacing:-.02em}.kpi span{font-size:12.5px;color:var(--muted);line-height:1.25}
+.kpi.k-none i{background:var(--accent-soft);color:var(--accent-text)}.kpi.k-ok i{background:var(--ok-soft);color:var(--ok)}.kpi.k-ok b{color:var(--ok)}
+.kpi.k-warn i{background:var(--warn-soft);color:var(--warn)}.kpi.k-bad i{background:var(--bad-soft);color:var(--bad)}.kpi.k-bad b{color:var(--bad)}
+.mlist{background:var(--surface);border:1px solid var(--line);border-radius:16px;overflow:hidden;box-shadow:var(--shadow)}
+.mrow{display:flex;align-items:center;gap:12px;padding:12px 14px;width:100%;text-align:left;border-top:1px solid var(--line)}.mrow:first-child{border-top:0}.mrow:active{background:var(--surface2)}
+.mbadge{min-width:50px;height:30px;padding:0 6px;border-radius:9px;display:grid;place-items:center;font-size:11.5px;font-weight:800;color:#fff;letter-spacing:.02em}
+.mbadge.t-ins{background:#2563EB}.mbadge.t-ret{background:#16A34A}.mbadge.t-exa{background:#E11D48}.mbadge.t-ext{background:#D97706}.mbadge.t-hid{background:#0891B2}
+.mtxt{flex:1;min-width:0}.mtxt b{display:block;font-size:14px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.mtxt>span{font-size:12px;color:var(--muted)}.mtxt em{color:var(--warn);font-style:normal}
+.mdev{font-weight:800;font-size:13px;padding:5px 9px;border-radius:9px;flex:none}.d-ok{background:var(--ok-soft);color:var(--ok)}.d-warn{background:var(--warn-soft);color:var(--warn)}.d-bad{background:var(--bad-soft);color:var(--bad)}.d-none{background:var(--surface2);color:var(--muted)}
 .hidden{display:none!important}
 .ptitle{font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--accent-text);margin:0 0 12px}
 .tseg{grid-template-columns:repeat(auto-fit,minmax(90px,1fr))}
@@ -331,6 +343,7 @@ textarea.inp{min-height:120px;resize:vertical;line-height:1.5}
 .map-bar .btn.ghost{background:#1E232B !important;border-color:#3A414C !important;color:#fff !important}
 .map-bar .btn.primary{background:#1D5CFF !important;color:#fff !important}
 </style>
+<script>try{var t=localStorage.getItem('rc_theme')||'dark';if(t!=='auto')document.documentElement.dataset.theme=t}catch(e){}</script>
 </head>
 <body>
 <div id="app"></div>
@@ -413,7 +426,7 @@ async function os(name, mode = 'readonly'){ const d = await idb(); return d.tran
 const getAll = async n => P((await os(n)).getAll());
 const byIdx = async (n, idx, v) => P((await os(n)).index(idx).getAll(v));
 const get = async (n, k) => P((await os(n)).get(k));
-const APP_VERSION = 19, APP_DATE = '19/11/2026';
+const APP_VERSION = 20, APP_DATE = '20/11/2026';
 const SYNCED = ['folders', 'projects', 'items', 'photos'];
 const rawPut = async (n, v) => P((await os(n, 'readwrite')).put(v));
 const put = async (n, v) => { if (SYNCED.includes(n) && v) v.mt = Date.now(); let r; try { r = await rawPut(n, v); } catch (e) { setSaveState('err'); throw e; } cloudPush(n, [v]); if (n !== 'settings') setSaveState('ok'); return r; };
@@ -748,6 +761,7 @@ async function renderMore(){
     <div class="sec"><h2>Aplicativo</h2></div>
     <div class="group">${row('version', I.save, 'Versão ' + APP_VERSION, 'Atualizada em ' + APP_DATE + ' · toque para verificar', 'blue')}
       ${row('grilles', I.sheet, 'Grelhas e difusores', 'Fórmulas dos fabricantes para a calculadora de vazão')}
+      ${row('theme', I.grid, 'Aparência', ({dark:'Escuro', light:'Claro', auto:'Automático (igual ao celular)'})[(() => { try { return localStorage.getItem('rc_theme') || 'dark'; } catch (e) { return 'dark'; } })()] + ' · toque para trocar')}
       ${row('save-phone', I.img, 'Salvar fotos também no celular', (await getSetting('savePhone')) ? 'Ligado: oferece salvar após cada foto' : 'Desligado')}</div>
     ${isWsAdmin() ? `<div class="sec"><h2>Empresa</h2></div><div class="group">${row('ws', I.case, 'Empresa ativa: ' + esc(cloud.orgName || company.name || ''), 'Trocar de empresa ou criar uma nova', 'blue')}</div>` : ''}
     <div class="sec"><h2>Equipe na nuvem</h2></div>
@@ -793,7 +807,8 @@ async function renderProject(){
   <main>
     <div class="path"><button data-act="tab" data-tab="folder">${esc((await getCompany()).name.split(' ')[0] || 'Início')}</button>${path.map(x => `${I.right}<button data-act="folder" data-id="${x.id}">${esc(x.name)}</button>`).join('')}</div>
     ${guideBar(p, items)}
-    <div class="stats">
+    ${tplOf(p).guided ? resumoHtml(p, items, view.mf || 'all') : ''}
+    <div class="stats"${tplOf(p).guided ? ' style="display:none"' : ''}>
       <button class="stat" data-act="filter" data-f="all"><b>${items.length}</b><span>Itens</span></button>
       <button class="stat" data-act="filter" data-f="nophoto"><b>${noPhoto.length}</b><span>Sem foto</span></button>
       <button class="stat" data-act="filter" data-f="bad"><b style="color:${bad.length ? 'var(--bad)' : 'inherit'}">${bad.length}</b><span>Com anomalia</span></button>
@@ -2654,6 +2669,38 @@ async function folderCompanySheet(fid){
     closeSheet(); render();
   });
 }
+
+/* ---------- resumo do equipamento (indicadores e medições por terminal) ---------- */
+function resumoHtml(p, items, mf){
+  const PRE = {ins:'INS', ret:'RET', exa:'EXA', ext:'AEX', hid:'HID'};
+  const ms = items.filter(i => { const v = vazParse(i.step); return (v && v.t) || (i.step || '').startsWith('hid_'); }).map(i => {
+    const v = vazParse(i.step), hid = !v, t = hid ? 'hid' : v.t, f = i.fields || {}, a = numVal(f.proj), m = numVal(f.v), b = m === null ? null : Math.abs(m);
+    return {i, t, a, b, dev: a && b !== null ? (b - a) / a * 100 : null, noPh: !(i.photoIds || []).length,
+      badge: f.pin || PRE[t] + '-' + String(hid ? +i.step.slice(4) : v.n).padStart(2, '0'),
+      name: hid ? (f.ponto || i.title) : vazLabel(p, i).replace(/^[A-Z]\d+ · /, '')};
+  }).sort((x, y) => (x.i.order || 0) - (y.i.order || 0));
+  if (!ms.length) return '';
+  const wd = ms.filter(x => x.dev !== null), avg = wd.length ? wd.reduce((s, x) => s + Math.abs(x.dev), 0) / wd.length : null;
+  const lvl = d => d === null ? 'none' : Math.abs(d) <= 10 ? 'ok' : Math.abs(d) <= 20 ? 'warn' : 'bad';
+  const fmt = d => d === null ? '—' : (d > 0 ? '+' : '') + d.toFixed(1).replace('.', ',') + '%';
+  const out = wd.filter(x => Math.abs(x.dev) > 10).length;
+  const list = ms.filter(x => mf === 'ins' ? x.t === 'ins' : mf === 'ret' ? ['ret', 'exa'].includes(x.t) : true);
+  const nv = v => v === null ? '—' : fmtN(v, 0);
+  return `<div class="sec" style="margin-top:4px"><h2>Resumo</h2></div>
+    <div class="kpis">
+      <div class="kpi k-none"><i>${I.clip}</i><b>${ms.length}</b><span>Terminais medidos</span></div>
+      <div class="kpi k-warn"><i>${I.cam}</i><b>${ms.filter(x => x.noPh).length}</b><span>Sem foto registrada</span></div>
+      <div class="kpi k-bad"><i>${I.flag}</i><b>${out}</b><span>Fora da tolerância (±10%)</span></div>
+      <div class="kpi k-${avg === null ? 'none' : lvl(avg)}"><i>${I.sheet}</i><b>${avg === null ? '—' : avg.toFixed(1).replace('.', ',') + '%'}</b><span>Desvio médio geral</span></div>
+    </div>
+    <div class="sec"><h2>Medições por terminal</h2></div>
+    <div class="chips" role="group" aria-label="Filtro das medições" style="margin-top:0">
+      ${[['all', 'Todos'], ['ins', 'Insuflamento'], ['ret', 'Retorno e exaustão']].map(([k, l]) => `<button class="chip" data-act="mfilter" data-f="${k}" aria-pressed="${mf === k}">${l}</button>`).join('')}</div>
+    <div class="mlist">${list.map(x => `<button class="mrow" data-act="mopen" data-id="${x.i.id}"><span class="mbadge t-${x.t}">${esc(x.badge)}</span>
+      <span class="mtxt"><b>${esc(x.name)}</b><span>Projeto ${nv(x.a)} · Medido ${nv(x.b)} m³/h${x.noPh ? ' · <em>sem foto</em>' : ''}</span></span>
+      <span class="mdev d-${lvl(x.dev)}">${fmt(x.dev)}</span></button>`).join('') || '<p class="hint" style="padding:14px;margin:0">Nenhuma medição neste filtro.</p>'}</div>
+    <div class="sec"><h2>Itens e fotos</h2></div>`;
+}
 /* ---------- empresa ---------- */
 async function companySheet(pid){
   const c = await getCompany(pid);
@@ -3091,6 +3138,13 @@ document.addEventListener('click', async e => {
     case 'open-item': go({name:'item', id}); break;
     case 'goto': if (id) go({name:'item', id}); break;
     case 'filter': view.filter = b.dataset.f; render(); break;
+    case 'mfilter': view.mf = b.dataset.f; render(); break;
+    case 'mopen': { const it = await get('items', id); if (!it) break; const p0 = await get('projects', it.projectId), its = await byIdx('items', 'projectId', p0.id);
+      const v = vazParse(it.step), key = v ? 'vaz_' + v.g : it.step, k = guideSteps(its, p0).findIndex(s => s.key === key);
+      if (k < 0) go({name:'item', id: it.id}); else go({name:'guide', id: p0.id, step: k}); break; }
+    case 'theme': { const order = ['dark', 'light', 'auto']; let t = 'dark'; try { t = localStorage.getItem('rc_theme') || 'dark'; } catch (e) {}
+      t = order[(order.indexOf(t) + 1) % 3]; try { localStorage.setItem('rc_theme', t); } catch (e) {}
+      if (t === 'auto') delete document.documentElement.dataset.theme; else document.documentElement.dataset.theme = t; render(); break; }
     case 'company': profilesSheet(); break;
     case 'new-folder': { const fid = await curFolder(); if (!fid) { folderCompanySheet(null); break; }
       promptSheet('Nova pasta', 'Nome da pasta', '', 'Criar pasta', async name => { await put('folders', {id: uid(), name, parentId: fid, createdAt: Date.now()}); render(); }); break; }
