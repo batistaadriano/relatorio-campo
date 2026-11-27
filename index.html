@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Relatório de Campo</title>
-<meta name="theme-color" content="#1D5CFF">
+<meta name="theme-color" content="#0F766E">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -14,9 +14,9 @@
 <link rel="icon" href="icon-192.png">
 <style>
 :root{
-  --bg:#F2F4F7; --surface:#FFFFFF; --surface2:#EEF1F5; --text:#0F172A; --muted:#64748B; --line:#E4E8EE;
-  --accent:#1D5CFF; --accent-2:#1446D8; --accent-ink:#FFFFFF; --accent-text:#1D5CFF; --accent-soft:#E9F0FF;
-  --ok:#16A34A; --ok-soft:#E8F7EE; --bad:#E11D48; --bad-soft:#FDECEF; --warn:#D97706; --warn-soft:#FDF3E3; --dim:#94A3B8;
+  --bg:#F6F7F9; --surface:#FFFFFF; --surface2:#F1F5F9; --text:#0F172A; --muted:#64748B; --line:#E2E8F0;
+  --accent:#0F766E; --accent-2:#115E59; --accent-ink:#FFFFFF; --accent-text:#0F766E; --accent-soft:#F0FDFA;
+  --ok:#059669; --ok-soft:#ECFDF5; --bad:#E11D48; --bad-soft:#FFF1F2; --warn:#D97706; --warn-soft:#FFFBEB; --dim:#94A3B8;
   --shadow:0 1px 2px rgba(15,23,42,.06),0 1px 1px rgba(15,23,42,.03);
   color-scheme:light; box-sizing:border-box;
   padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
@@ -24,21 +24,21 @@
 @media (prefers-color-scheme: dark){
   :root:not([data-theme="light"]){
     --bg:#0A0F1C; --surface:#111A2E; --surface2:#1A2540; --text:#E6ECF5; --muted:#8C9AB3; --line:#22304D;
-    --accent:#2563EB; --accent-2:#1D4ED8; --accent-text:#7FA6FF; --accent-soft:#16264A;
+    --accent:#0D9488; --accent-2:#0F766E; --accent-text:#5EEAD4; --accent-soft:#0F2E2B;
     --ok:#34C46E; --ok-soft:#143022; --bad:#FF5A7A; --bad-soft:#3A1720; --warn:#F2A33A; --warn-soft:#3A2A12; --dim:#6B778A;
     --shadow:none; color-scheme:dark;
   }
 }
 :root[data-theme="dark"]{
   --bg:#0A0F1C; --surface:#111A2E; --surface2:#1A2540; --text:#E6ECF5; --muted:#8C9AB3; --line:#22304D;
-  --accent:#2563EB; --accent-2:#1D4ED8; --accent-text:#7FA6FF; --accent-soft:#16264A;
+  --accent:#0D9488; --accent-2:#0F766E; --accent-text:#5EEAD4; --accent-soft:#0F2E2B;
   --ok:#34C46E; --ok-soft:#143022; --bad:#FF5A7A; --bad-soft:#3A1720; --warn:#F2A33A; --warn-soft:#3A2A12; --dim:#6B778A;
   --shadow:none; color-scheme:dark;
 }
 *,*::before,*::after{box-sizing:inherit}
 html{scroll-padding-top:env(safe-area-inset-top,0px)}
 body{margin:0;background:var(--bg);color:var(--text);
-  font-family:-apple-system,"SF Pro Text","Inter",BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
+  font-family:"Inter",-apple-system,"SF Pro Text",BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
   font-size:16px;line-height:1.45;-webkit-tap-highlight-color:transparent;-webkit-font-smoothing:antialiased}
 body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--surface)}
 body[data-view="home"]::before{background:var(--accent)}
@@ -181,7 +181,7 @@ main{padding:12px 16px 120px;max-width:760px;margin:0 auto}
 .tab svg{width:22px;height:22px}
 .tab[aria-current="page"]{background:var(--accent-soft);color:var(--accent-text);font-weight:700}
 .fab-float{position:fixed;right:18px;bottom:calc(84px + env(safe-area-inset-bottom,0px));z-index:7;width:58px;height:58px;border-radius:50%;
-  background:var(--accent);color:#fff;display:grid;place-items:center;box-shadow:0 8px 20px rgba(29,92,255,.35)}
+  background:var(--accent);color:#fff;display:grid;place-items:center;box-shadow:0 8px 20px rgba(15,118,110,.35)}
 .fab-float svg{width:26px;height:26px}
 .fab-float:active{transform:scale(.95)}
 
@@ -195,7 +195,7 @@ main{padding:12px 16px 120px;max-width:760px;margin:0 auto}
 .text-btn svg{width:19px;height:19px}
 .text-btn:disabled{color:var(--dim)}
 .fab{width:62px;height:62px;border-radius:50%;background:var(--accent);color:#fff;display:grid;place-items:center;
-  margin-top:-30px;box-shadow:0 8px 20px rgba(29,92,255,.35);border:4px solid var(--surface)}
+  margin-top:-30px;box-shadow:0 8px 20px rgba(15,118,110,.35);border:4px solid var(--surface)}
 .fab svg{width:27px;height:27px}
 .fab:active{transform:scale(.96)}
 
@@ -298,6 +298,75 @@ textarea.inp{min-height:120px;resize:vertical;line-height:1.5}
 .map-pin small{position:absolute;left:100%;top:50%;transform:translateY(-50%);margin-left:6px;background:rgba(17,19,23,.9);color:#fff;font-size:11px;font-weight:700;padding:3px 7px;border-radius:7px;white-space:nowrap;pointer-events:none;border:1px solid rgba(255,255,255,.15)}
 .cascrow{border:1px solid var(--line);border-radius:12px;padding:10px 12px 2px;margin-bottom:10px}.cascrow-t{display:flex;justify-content:space-between;align-items:center;font-weight:700;font-size:13.5px;margin-bottom:8px}
 .balbox{background:var(--surface2);border-radius:10px;padding:8px 10px;font-size:12.5px;line-height:1.5}.balbox .pos{color:var(--accent-text)}.balbox .neg{color:var(--warn)}
+.pendp-h{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;font-size:16px}
+.ppill{font-size:12px;font-weight:800;padding:4px 10px;border-radius:9px}.pp-Urgente{background:var(--bad-soft);color:var(--bad)}.pp-Alta{background:var(--warn-soft);color:var(--warn)}.pp-Normal{background:var(--accent-soft);color:var(--accent-text)}.pp-san{background:var(--ok-soft);color:var(--ok)}
+.map-wrap .map-pin.pd-Urgente{background:#E11D48}.map-wrap .map-pin.pd-Alta{background:#D97706}.map-wrap .map-pin.pd-Normal{background:#2563EB}.map-wrap .map-pin.pd-san{background:#16A34A}
+.obtop{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--surface);border-bottom:1px solid var(--line)}
+.obtop-t{flex:1;min-width:0}.obtop-t small{display:block;font-size:10.5px;font-weight:800;letter-spacing:.06em;color:var(--accent-text)}.obtop-t b{display:block;font-size:17px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.obtop .btn{min-height:40px;padding:0 12px;font-size:13.5px;border-radius:12px}.obbtn-g{background:#059669;color:#fff}.obbtn-d{background:#0F172A;color:#fff}
+@media (max-width:560px){.obtop .btn span{display:none}.obtop .btn{padding:0 10px}}
+.obpavs{display:flex;gap:8px;align-items:center;overflow-x:auto;padding:10px 12px;background:var(--bg);border-bottom:1px solid var(--line);scrollbar-width:none}
+.obpavs>span{font-size:11px;font-weight:800;color:var(--muted);letter-spacing:.06em;flex:none}
+.obpavs button{flex:none;min-height:36px;padding:0 12px;border-radius:12px;border:1px solid var(--line);background:var(--surface);font-weight:700;font-size:13.5px}
+.obpavs button i{font-style:normal;font-size:11px;background:var(--surface2);border-radius:8px;padding:1px 6px;margin-left:4px;color:var(--muted)}
+.obpavs button[aria-pressed="true"]{background:var(--accent);color:#fff;border-color:var(--accent)}.obpavs button[aria-pressed="true"] i{background:rgba(255,255,255,.25);color:#fff}
+.obmain{max-width:1180px;margin:0 auto;padding:16px 14px 120px}
+.obhead{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap;margin-bottom:14px}.obhead h1{margin:0;font-size:24px;letter-spacing:-.02em}.obhead p{margin:2px 0 0;color:var(--muted);font-size:13px}
+.obstats{display:flex;gap:8px;flex-wrap:wrap}.obstats span{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:6px 10px;font-size:13px}.obstats b.bad{color:var(--bad)}
+.obpanel{background:var(--surface);border:1px solid var(--line);border-radius:22px;margin-bottom:16px;overflow:hidden;box-shadow:var(--shadow)}
+.obbar{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;padding:12px 14px}
+.obzoom{display:flex;align-items:center;gap:6px}.obzoom button{min-width:34px;height:34px;border-radius:10px;border:1px solid var(--line);background:var(--surface2);font-weight:800}.obzoom span{font-size:12.5px;font-family:ui-monospace,monospace;color:var(--muted)}
+.obzoom .obedit{padding:0 12px;background:var(--accent-soft);color:var(--accent-text);border-color:transparent;font-size:13px}
+.obmap{background:#0F172A;overflow:auto;max-height:70vh;-webkit-overflow-scrolling:touch}.obwrap{position:relative;margin:0 auto;min-width:100%}.obwrap img{width:100%;display:block;background:#fff}
+.obwrap canvas{position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none}
+.obpin{position:absolute;transform:translate(-50%,-50%);white-space:nowrap;font:700 11px ui-monospace,monospace;color:#fff;padding:4px 8px;border-radius:999px;border:2px solid #fff;box-shadow:0 3px 8px rgba(0,0,0,.3);background:#2563EB}
+.obpin.st-ok,.obpin.pd-san{background:#059669}.obpin.st-warn,.obpin.pd-Alta{background:#D97706}.obpin.st-bad,.obpin.pd-Urgente{background:#E11D48}.obpin.pd-Normal{background:#2563EB}.obpin.st-none{background:#64748B}
+.obleg{display:flex;gap:14px;flex-wrap:wrap;padding:10px 14px;font-size:12px;color:var(--muted)}.obleg i{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:5px}
+.obsec{padding:14px 16px 8px}.obsec b{display:block;font-size:16px}.obsec small{color:var(--muted);font-size:12.5px}
+.obcard{margin:0 12px 12px;border:1px solid var(--line);border-radius:16px;overflow:hidden}.obcard-h{display:flex;justify-content:space-between;gap:10px;padding:12px 14px;background:var(--surface2)}
+.obcard-h>div:first-child>b{display:block}.obcard-h span{font-size:12px;color:var(--muted)}.obbal{text-align:right;font-size:12px;line-height:1.5;flex:none;white-space:nowrap}.obcard-h>div:first-child{flex:1;min-width:0}
+.obrow>span.mdev,.obrow>span.ppill{flex:none!important}.obbal .pos{color:var(--ok)}.obbal .neg{color:var(--warn)}
+.obrow{display:flex;align-items:center;gap:12px;width:100%;text-align:left;padding:11px 14px;border-top:1px solid var(--line)}.obrow>span:first-child,.obrow>span:nth-child(2){flex:1;min-width:0}
+.obrow b{display:block;font-size:14px;font-family:ui-monospace,monospace}.obrow small{display:block;font-size:12px;color:var(--muted)}
+.obrow .obn{flex:none!important;width:26px;height:26px;border-radius:50%;background:var(--surface2);display:grid;place-items:center;font-weight:800;font-size:12px}
+.obdp{flex:none!important;text-align:right}.obdp b{font-size:15px}
+body[data-view="obra"]::before{background:var(--surface)}
+/* ---------- formato do modelo v24 ---------- */
+.tabs{display:none!important}
+body[data-view="folder"],body[data-view="pend"],body[data-view="more"],body[data-view="home"]{padding-top:58px}
+.apphdr{position:fixed;left:0;right:0;top:0;padding-top:env(safe-area-inset-top,0px);z-index:6;background:var(--surface);border-bottom:1px solid var(--line)}
+.apphdr-in{max-width:1180px;margin:0 auto;display:flex;align-items:center;gap:10px;padding:8px 12px}
+.rcbadge{width:40px;height:40px;border-radius:14px;background:var(--accent);color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;font-weight:800;font-size:13px;line-height:1;flex:none}
+.rcbadge small{font:600 8.5px ui-monospace,monospace;opacity:.75;margin-top:2px}
+.apphdr-t{flex:1;min-width:0}.apphdr-t small,.obtop-t small{display:block;font-size:10.5px;font-weight:800;letter-spacing:.06em;color:var(--accent-text)}.apphdr-t b{font-size:17px}
+.offok{font-weight:700;color:var(--ok);background:var(--ok-soft);border-radius:999px;padding:1px 7px;margin-left:6px;letter-spacing:0}
+.apphdr-nav{display:flex;gap:6px}.apphdr-nav button{display:flex;align-items:center;gap:6px;min-height:38px;padding:0 12px;border-radius:12px;font-weight:700;font-size:13.5px;color:var(--muted);border:1px solid transparent}
+.apphdr-nav button svg{width:18px;height:18px}.apphdr-nav button[aria-current="page"]{background:var(--accent);color:#fff}
+@media (max-width:640px){.apphdr-nav button span{display:none}.apphdr-nav button{padding:0 9px}}
+.obsel{display:block;width:100%;max-width:420px;font:700 16px/1.2 inherit;color:var(--text);background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:5px 8px;margin-top:2px}
+.obaddpav{border-style:dashed!important;color:var(--muted)}
+.obsec-row{display:flex;justify-content:space-between;align-items:center;gap:10px}.obbtn-t{min-height:38px;padding:0 12px;border-radius:12px;background:var(--accent-soft);color:var(--accent-text);font-size:13.5px}
+@media (max-width:560px){.obbtn-t span{display:none}}
+.obrow .chev{width:18px;height:18px;flex:none;color:var(--muted)}
+.obeq{flex:none!important;width:36px;height:36px;border-radius:12px;background:var(--accent-soft);color:var(--accent-text);display:grid;place-items:center}.obeq svg{width:18px;height:18px}
+.fab-float{bottom:calc(18px + env(safe-area-inset-bottom,0px))}
+.top{background:var(--surface);border-bottom:1px solid var(--line)}
+.top h1{text-align:left;text-transform:none;letter-spacing:-.01em;font-size:17px;padding-left:4px}
+.top .sub{font-size:12.5px}
+.panel,.group,.insp,.kpi,.mlist,.obcard{border:1px solid var(--line);box-shadow:none;border-radius:20px}
+.panel{padding:16px 16px 4px}
+label.lb,.lb{font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.inp{background:#F8FAFC;border-color:#CBD5E1;border-radius:12px}
+:root[data-theme="dark"] .inp{background:var(--surface2)}
+.seg button,.tseg button{border-radius:12px;font-weight:700;font-size:13.5px;background:var(--surface)}
+.tseg button[aria-pressed="true"],.seg button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:#fff}
+.chip{border-radius:12px;font-weight:700}
+.eqtabs{background:var(--bg);gap:6px;padding:8px 12px}.eqtabs button{border:1px solid var(--line);background:var(--surface);border-radius:12px}
+.eqtabs button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:#fff}
+.gq{font-size:17px;line-height:1.35}.gsec{font-size:11px;letter-spacing:.08em}
+.vblk-t{font-size:12px;letter-spacing:.08em}
+.mbadge,.mtxt b,.obrow b{font-family:ui-monospace,"JetBrains Mono",monospace}
+.btn{border-radius:14px}.btn.ghost{border-color:#CBD5E1}
 .hidden{display:none!important}
 .ptitle{font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--accent-text);margin:0 0 12px}
 .tseg{grid-template-columns:repeat(auto-fit,minmax(90px,1fr))}
@@ -316,7 +385,7 @@ textarea.inp{min-height:120px;resize:vertical;line-height:1.5}
 .sk{position:fixed;inset:0;z-index:15;background:#0B0D10;color:#fff;display:flex;flex-direction:column;padding:env(safe-area-inset-top,0px) 0 env(safe-area-inset-bottom,0px)}
 .sk-top{display:flex;align-items:center;justify-content:space-between;padding:8px 10px}
 .sk-top button{min-height:44px;padding:0 14px;border-radius:12px;font-weight:600;color:#fff}
-.sk-top .sk-save{background:#1D5CFF}
+.sk-top .sk-save{background:#0F766E}
 .sk-stage{flex:1;min-height:0;display:grid;place-items:center;padding:6px}
 .sk-stage canvas{touch-action:none;border-radius:6px}
 .sk-tools{padding:8px 10px 10px;display:grid;gap:8px}
@@ -351,7 +420,9 @@ textarea.inp{min-height:120px;resize:vertical;line-height:1.5}
 .map-bar .btn.ghost{background:#1E232B !important;border-color:#3A414C !important;color:#fff !important}
 .map-bar .btn.primary{background:#1D5CFF !important;color:#fff !important}
 </style>
-<script>try{var t=localStorage.getItem('rc_theme')||'dark';if(t!=='auto')document.documentElement.dataset.theme=t}catch(e){}</script>
+<script>try{var t=localStorage.getItem('rc_theme')||'light';if(t!=='auto')document.documentElement.dataset.theme=t}catch(e){}</script>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 </head>
 <body>
 <div id="app"></div>
@@ -434,7 +505,7 @@ async function os(name, mode = 'readonly'){ const d = await idb(); return d.tran
 const getAll = async n => P((await os(n)).getAll());
 const byIdx = async (n, idx, v) => P((await os(n)).index(idx).getAll(v));
 const get = async (n, k) => P((await os(n)).get(k));
-const APP_VERSION = 23, APP_DATE = '26/11/2026';
+const APP_VERSION = 24, APP_DATE = '26/11/2026';
 const SYNCED = ['folders', 'projects', 'items', 'photos'];
 const rawPut = async (n, v) => P((await os(n, 'readwrite')).put(v));
 const put = async (n, v) => { if (SYNCED.includes(n) && v) v.mt = Date.now(); let r; try { r = await rawPut(n, v); } catch (e) { setSaveState('err'); throw e; } cloudPush(n, [v]); if (n !== 'settings') setSaveState('ok'); return r; };
@@ -599,7 +670,7 @@ function go(v){
 async function render(){
   document.body.dataset.view = view.name;
   try {
-    if (view.name === 'home') await renderHome();
+    if (view.name === 'home') { const ob = await pickObra(); if (ob) { view = {name:'obra', id: ob}; document.body.dataset.view = 'obra'; await renderObra(); } else await renderHome(); }
     else if (view.name === 'folder') await renderFolder();
     else if (view.name === 'pend') await renderPend();
     else if (view.name === 'more') await renderMore();
@@ -607,6 +678,7 @@ async function render(){
     else if (view.name === 'item') await renderItem();
     else if (view.name === 'guide') await renderGuide();
     else if (view.name === 'fill') await renderFill();
+    else if (view.name === 'obra') await renderObra();
     setSaveState();
   } catch (e) {
     console.error(e);
@@ -614,9 +686,10 @@ async function render(){
   }
 }
 function tabsHtml(active){
-  const t = [['home', 'Início', I.home], ['folder', 'Pastas', I.folderO], ['pend', 'Pendências', I.flag], ['more', 'Mais', I.grid]];
-  return `<nav class="tabs" aria-label="Navegação"><div class="tabs-inner">${t.map(([k, l, ic]) =>
-    `<button class="tab" data-act="tab" data-tab="${k}" ${k === active ? 'aria-current="page"' : ''}>${ic}<span>${l}</span></button>`).join('')}</div></nav>`;
+  const t = [['obra', 'Obra', I.grid], ['folder', 'Pastas', I.folderO], ['pend', 'Pendências', I.flag], ['more', 'Ajustes', I.more]];
+  return `<header class="apphdr"><div class="apphdr-in"><span class="rcbadge">RC<small>v${APP_VERSION}</small></span>
+    <div class="apphdr-t"><small>OBRA EM CAMPO</small><b>${({folder:'Pastas', pend:'Pendências', more:'Ajustes', home:'Início'})[active] || ''}</b></div>
+    <nav class="apphdr-nav">${t.map(([k, l, ic]) => `<button data-act="${k === 'obra' ? 'go-obra' : 'tab'}" data-tab="${k}" aria-current="${k === active ? 'page' : 'false'}">${ic}<span>${l}</span></button>`).join('')}</nav></div></header>`;
 }
 const chev = `<svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>`;
 
@@ -718,6 +791,7 @@ async function renderFolder(){
     <div class="ltitle">${fid ? `<button class="icon-btn" data-act="folder" data-id="${pid0(path[path.length - 1]) || ''}" aria-label="Voltar" style="margin-left:-10px">${I.back}</button>` : ''}
       <div><h1>${esc(title)}</h1><p>${fid ? 'Pastas e relatórios' : 'Organize por cliente, unidade e tipo de ensaio'}</p></div></div>
     ${crumbsHtml(company, path, null)}
+    ${fid && subs.length ? `<button class="btn primary block" data-act="obra" data-id="${fid}" style="margin:4px 0 14px">${I.grid}Painel da obra · mapa, TAB, cascata e pendências</button>` : ''}
     ${rows ? `<div class="group">${rows}</div>` : `<div class="group"><div class="empty-state"><span class="ico blue">${I.folderO}</span><b>Pasta vazia</b>
       <p>Crie pastas como “Rede D’Or → Ribeirão Preto → Painel de Baixa” e coloque os relatórios dentro.</p>
       <div class="row" style="max-width:420px;margin:0 auto"><button class="btn primary" data-act="new-folder">${I.folder}Nova pasta</button>
@@ -769,7 +843,7 @@ async function renderMore(){
     <div class="sec"><h2>Aplicativo</h2></div>
     <div class="group">${row('version', I.save, 'Versão ' + APP_VERSION, 'Atualizada em ' + APP_DATE + ' · toque para verificar', 'blue')}
       ${row('grilles', I.sheet, 'Grelhas e difusores', 'Fórmulas dos fabricantes para a calculadora de vazão')}
-      ${row('theme', I.grid, 'Aparência', ({dark:'Escuro', light:'Claro', auto:'Automático (igual ao celular)'})[(() => { try { return localStorage.getItem('rc_theme') || 'dark'; } catch (e) { return 'dark'; } })()] + ' · toque para trocar')}
+      ${row('theme', I.grid, 'Aparência', ({dark:'Escuro', light:'Claro', auto:'Automático (igual ao celular)'})[(() => { try { return localStorage.getItem('rc_theme') || 'light'; } catch (e) { return 'light'; } })()] + ' · toque para trocar')}
       ${row('save-phone', I.img, 'Salvar fotos também no celular', (await getSetting('savePhone')) ? 'Ligado: oferece salvar após cada foto' : 'Desligado')}</div>
     ${isWsAdmin() ? `<div class="sec"><h2>Empresa</h2></div><div class="group">${row('ws', I.case, 'Empresa ativa: ' + esc(cloud.orgName || company.name || ''), 'Trocar de empresa ou criar uma nova', 'blue')}</div>` : ''}
     <div class="sec"><h2>Equipe na nuvem</h2></div>
@@ -809,7 +883,7 @@ async function renderProject(){
       <div class="desc"><span class="dot ${s}"></span>${esc(itemSummary(p, it) || it.desc || (n ? 'Foto registrada' : 'Aguardando foto'))}</div></div></button>`;
   }).join('');
   app.innerHTML = `
-  <header class="top"><button class="icon-btn" data-act="folder" data-id="${pid0(p) || ''}" aria-label="Voltar">${I.back}</button>
+  <header class="top"><button class="icon-btn" data-act="to-obra" data-id="${p.id}" aria-label="Voltar">${I.back}</button>
     <h1>${esc(p.name)}</h1>
     <button class="icon-btn" data-act="project-menu" data-id="${p.id}" aria-label="Mais opções">${I.more}</button></header>
   ${eqTabs(p, 'resumo')}
@@ -854,7 +928,7 @@ async function renderItem(){
         <img src="${phSrc(ph)}" alt="Foto ${i + 1}" data-act="zoom" data-id="${ph.id}" onerror="this.outerHTML='<div class=&quot;add-photo&quot; style=&quot;margin:0&quot;>Esta foto não pôde ser lida. Exclua no ícone da lixeira e tire de novo.</div>'">
         <button class="del" data-act="del-photo" data-id="${ph.id}" aria-label="Excluir foto">${I.trash}</button>
         <button class="sketch" data-act="sketch" data-id="${ph.id}">${I.edit}Riscar</button>
-        <span class="n"><b>${i === 0 ? 'Item ' + (idx + 1) : 'Foto ' + (idx + 1) + '.' + i}</b>Foto ${i + 1} de ${photos.length} · ${esc(fmtDate(ph.takenAt))}</span>
+        <span class="n"><b>${i === 0 ? 'Item ' + (idx + 1) : 'Foto ' + (idx + 1) + '.' + i}</b>${ph.phase === 'depois' ? '<b style="color:var(--ok)">DEPOIS</b> · ' : it.kind === 'pend' ? 'ANTES · ' : ''}Foto ${i + 1} de ${photos.length} · ${esc(fmtDate(ph.takenAt))}</span>
         <div class="cap"><label for="pn-${ph.id}">Observação da foto ${i === 0 ? (idx + 1) : (idx + 1) + '.' + i}</label>
         <input class="inp pnote" id="pn-${ph.id}" data-ph="${ph.id}" maxlength="150" value="${esc(ph.note || '')}" placeholder="${esc(tplOf(p).noteHint)}"></div></figure>`).join('')}</div>`
     : `<div class="add-photo">${I.cam}Nenhuma foto neste item</div>`;
@@ -864,6 +938,7 @@ async function renderItem(){
     <button class="icon-btn" data-act="item-menu" aria-label="Mais opções">${I.more}</button></header>
   <main>
     ${photoHtml}
+    ${it.kind === 'pend' ? pendPanel(it) : ''}
     ${it.kind === 'pend' ? `<button class="btn ghost block" data-act="croqui-item" data-id="${it.id}" style="margin-bottom:10px">${I.edit}Croqui na planta do projeto</button>` : ''}
     <button class="btn ghost block" data-act="pin-item" data-id="${it.id}" style="margin-bottom:10px">${I.map}Marcar posição na planta</button>
     <div class="photo-actions"><button class="btn ghost" data-act="cam-add">${I.cam}Tirar foto</button>
@@ -1511,19 +1586,26 @@ async function saveGuideField(el){
 function queueGuideField(el){ setSaveState('saving'); const id = (el.dataset.id || el.dataset.key) + el.dataset.k; clearTimeout(gfT[id]); gfT[id] = setTimeout(() => saveGuideField(el), 400); }
 async function flushGuideFields(){ for (const el of document.querySelectorAll('.gf')) { const id = (el.dataset.id || el.dataset.key) + el.dataset.k; if (gfT[id]) { clearTimeout(gfT[id]); delete gfT[id]; await saveGuideField(el); } } }
 function pendSheet(pid){
-  let prio = 'Normal';
+  let prio = 'Normal', disc = '';
   const s = openSheet(`<h2>Nova pendência</h2>
-    <div class="field"><label class="lb" for="pd-desc">O que foi encontrado</label><textarea class="inp" id="pd-desc" placeholder="Ex.: dreno obstruído, água no forro"></textarea></div>
+    <div class="field"><span class="lb">Criticidade</span><div class="seg tseg">${PEND_CRIT.map(([v, l]) => `<button data-pr="${v}" aria-pressed="${v === prio}">${l}</button>`).join('')}</div></div>
+    <div class="field"><span class="lb">Disciplina</span><div class="seg tseg" style="flex-wrap:wrap">${DISCS.map(d => `<button data-ds="${d}" aria-pressed="false">${d}</button>`).join('')}</div></div>
+    <div class="field"><label class="lb" for="pd-desc">O que foi encontrado</label><textarea class="inp" id="pd-desc" placeholder="Descreva ou toque nos atalhos"></textarea>
+      <div class="chips" style="margin-top:8px">${PEND_CHIPS.map(c => `<button class="chip" data-ch="${esc(c)}">${esc(c)}</button>`).join('')}</div></div>
     <div class="field"><label class="lb" for="pd-loc">Local <span style="font-weight:400;color:var(--muted)">opcional</span></label><input class="inp" id="pd-loc" placeholder="Ex.: sala 412"></div>
-    <div class="field"><span class="lb">Prioridade</span><div class="seg tseg">${['Urgente', 'Alta', 'Normal'].map(o => `<button data-pr="${o}" aria-pressed="${o === prio}">${o}</button>`).join('')}</div></div>
-    <button class="btn primary block" data-c="ok">${I.cam}Salvar e adicionar as fotos</button>`);
+    <div class="two"><div class="field"><label class="lb" for="pd-resp">Responsável pela correção</label><input class="inp" id="pd-resp" placeholder="Ex.: Instaladora HVAC"></div>
+    <div class="field"><label class="lb" for="pd-prazo">Prazo</label><input class="inp" type="date" id="pd-prazo"></div></div>
+    <button class="btn primary block" data-c="ok">${I.cam}Salvar e adicionar a foto (antes)</button>`);
   s.addEventListener('click', async ev => {
-    const pb = ev.target.closest('[data-pr]');
-    if (pb) { prio = pb.dataset.pr; s.querySelectorAll('[data-pr]').forEach(x => x.setAttribute('aria-pressed', x === pb)); return; }
+    const pb = ev.target.closest('[data-pr]'); if (pb) { prio = pb.dataset.pr; s.querySelectorAll('[data-pr]').forEach(x => x.setAttribute('aria-pressed', x === pb)); return; }
+    const db = ev.target.closest('[data-ds]'); if (db) { disc = disc === db.dataset.ds ? '' : db.dataset.ds; s.querySelectorAll('[data-ds]').forEach(x => x.setAttribute('aria-pressed', x.dataset.ds === disc)); return; }
+    const ch = ev.target.closest('[data-ch]'); if (ch) { const ta = $('#pd-desc', s); ta.value = (ta.value.trim() ? ta.value.trim() + '; ' : '') + ch.dataset.ch; return; }
     if (!ev.target.closest('[data-c="ok"]')) return;
     const desc = $('#pd-desc', s).value.trim(); if (!desc) { $('#pd-desc', s).focus(); return; }
-    const it = await createItem(pid, {title: 'Pendência: ' + desc.slice(0, 60), desc});
-    Object.assign(it, {kind:'pend', status:'anomalia', order: 1000 + Date.now() / 1e13, fields: {prio, local: $('#pd-loc', s).value.trim()}});
+    const code = await pendCode(pid);
+    const it = await createItem(pid, {title: code + ': ' + desc.slice(0, 60), desc});
+    Object.assign(it, {kind:'pend', status:'anomalia', order: 1000 + Date.now() / 1e13,
+      fields: {prio, disc, code, st:'aberta', local: $('#pd-loc', s).value.trim(), resp: $('#pd-resp', s).value.trim(), prazo: $('#pd-prazo', s).value}});
     await put('items', it); closeSheet(); go({name:'item', id: it.id});
   });
 }
@@ -1845,7 +1927,7 @@ async function openPlantMap(pid, opts = {}){
   let undoStack = [];
   let selPinId = opts.pinId || null;
   let placingItemId = opts.placeItemId || null;
-  let placeKey = opts.placeKey || null;
+  let placeKey = opts.placeKey || null, placePend = opts.placePend || null, layer = 'all';
   let wallMask = null;
 
   const eqColor = id => MAP_COLORS[Math.max(0, folderEqs.findIndex(x => x.id === id)) % MAP_COLORS.length];
@@ -1878,6 +1960,7 @@ async function openPlantMap(pid, opts = {}){
     <div class="map-bar">
       <div class="row">
         ${ps.length > 1 ? `<select id="mp-plant">${ps.map(x => `<option value="${x.id}" ${x.id === curPlant.id ? 'selected' : ''}>${esc(x.note || 'Planta')}</option>`).join('')}</select>` : ''}
+        <select id="mp-layer"><option value="all">Camada: todas</option><option value="tab">Medições (TAB)</option><option value="pend">Pendências</option></select>
         <select id="mp-eq">${folderEqs.map(x => `<option value="${x.id}" ${x.id === activePid ? 'selected' : ''}>${esc(x.name)}</option>`).join('')}</select>
       </div>
       <div class="row" id="mp-actions"></div>
@@ -1914,14 +1997,15 @@ async function openPlantMap(pid, opts = {}){
     const allPins = [
       ...plantPins().map(x => ({...x, _src:'plant'})),
       ...projectPins(curProj()).filter(x => x.plantId === curPlant.id).map(x => ({...x, _src:'proj'}))
-    ];
+    ].filter(x => layer === 'all' || (layer === 'pend' ? x.t === 'pend' : x.t !== 'pend'));
     pinsEl.innerHTML = allPins.map((pin, idx) => {
       const lbl = pin.label || pin.code || String(idx + 1);
       const pm = pin.key ? pinMeas(allItems.find(i => i.projectId === pin.pid && i.step === pin.key)) : {v: null, lvl: 'none'};
-      const cls = (pin.t || '') + (pm.lvl !== 'none' ? ' st-' + pm.lvl : '');
+      const cls = (pin.t || '') + (pm.lvl !== 'none' ? ' st-' + pm.lvl : '') + (pin.t === 'pend' ? ' pd-' + pendLvl(allItems.find(i => i.id === pin.itemId)?.fields) : '');
       return `<button type="button" class="map-pin ${cls} ${pin.id === selPinId ? 'sel' : ''}" data-pin="${pin.id}" style="left:${pin.x * 100}%;top:${pin.y * 100}%">${esc(lbl)}${pm.v !== null ? `<small>${fmtN(pm.v, 0)} m³/h${pm.d !== null ? ' · ' + (pm.d > 0 ? '+' : '') + pm.d.toFixed(1).replace('.', ',') + '%' : ''}</small>` : ''}</button>`;
     }).join('');
 
+    if (placePend) { hintEl.textContent = 'Toque na planta no local da pendência'; actEl.innerHTML = '<button class="btn ghost" data-k="cancel-key">Cancelar</button>'; return; }
     if (placeKey) { hintEl.textContent = 'Toque na planta no local deste terminal'; actEl.innerHTML = '<button class="btn ghost" data-k="cancel-key">Cancelar</button>'; return; }
     const sel = allPins.find(x => x.id === selPinId);
     if (mode === 'poly') {
@@ -2084,6 +2168,12 @@ async function openPlantMap(pid, opts = {}){
     if (moved || ptrs.size > 0 || e.target.closest('.map-hud') || e.target.closest('.map-leg')) return;
     const pt = clientToNorm(e.clientX, e.clientY);
 
+    if (placePend) {
+      const it = await get('items', placePend), lb = it?.fields?.code || 'PEND';
+      curPlant.pins = plantPins().filter(x => x.itemId !== placePend); curPlant.pins.push({id: uid(), x: pt.x, y: pt.y, t:'pend', pid: it.projectId, itemId: placePend, label: lb});
+      await put('photos', curPlant); const ai = allItems.find(i => i.id === placePend); if (!ai && it) allItems.push(it);
+      placePend = null; renderPins(); toast(`Pendência ${lb} marcada na planta.`); return;
+    }
     if (placeKey) {
       const it = await ensureStepItem(activePid, placeKey), vz = vazParse(placeKey), t = vz?.t || 'ins';
       const label = it.fields?.pin || (PIN_TPFX[t] + (plantPins().filter(x => x.pid === activePid && x.t === t).length + 1));
@@ -2135,6 +2225,7 @@ async function openPlantMap(pid, opts = {}){
     const pl = ps.find(x => x.id === e.target.value);
     if (pl) { selPinId = null; polyDraft = []; await loadPlant(pl); }
   });
+  $('#mp-layer', ov)?.addEventListener('change', e => { layer = e.target.value; selPinId = null; renderPins(); });
   $('#mp-eq', ov)?.addEventListener('change', async e => {
     activePid = e.target.value;
     items = (await byIdx('items', 'projectId', activePid)).sort(byOrder);
@@ -2154,7 +2245,7 @@ async function openPlantMap(pid, opts = {}){
     if (k === 'zin') { zoomAt(1.3); return; }
     if (k === 'zout') { zoomAt(0.77); return; }
     if (k === 'zfit') { fitView(); return; }
-    if (k === 'cancel-key') { placeKey = null; renderPins(); return; }
+    if (k === 'cancel-key') { placeKey = null; placePend = null; renderPins(); return; }
     if (k === 'clear-poly') { polyDraft = []; redrawAreas(); renderPins(); return; }
     if (k === 'close-poly' && polyDraft.length >= 3) {
       const areas = plantAreas();
@@ -2202,7 +2293,7 @@ async function openPlantMap(pid, opts = {}){
       return;
     }
     if (k === 'open-pin-item' && selPinId) {
-      const pin = projectPins(curProj()).find(x => x.id === selPinId);
+      const pin = plantPins().find(x => x.id === selPinId) || projectPins(curProj()).find(x => x.id === selPinId);
       if (pin?.itemId) { closeMap(); go({name:'item', id: pin.itemId}); }
       return;
     }
@@ -2385,37 +2476,55 @@ async function makeReport(o){
       T(l, x, H - 43, {s:8, c:MUT}); T(n, x, H - 38.5, {s:10, b:true}); if (r) T(r, x, H - 34, {s:8.5, c:MUT}); });
 
     /* pendências: quadro */
+    const PRGB = {Urgente: RED, Alta: ORG, Normal: BLU, san: GRN}, plab = f => pendLvl(f) === 'san' ? 'Sanada' : PRIO_LABEL[f?.prio || 'Normal'];
+    const fmtD = d => d ? d.split('-').reverse().join('/') : '—';
     if (pends.length) {
       y = page('Quadro de pendências', `${local} · ${dateStr}`);
-      const pc = p => pends.filter(x => (x.it.fields?.prio || 'Normal') === p).length;
-      y = kpis([[pends.length, 'Pendências', NAVY], [pc('Urgente'), 'Urgente', RED], [pc('Alta'), 'Alta', ORG], [pc('Normal'), 'Normal', BLU]], y);
+      const ab = pends.filter(x => x.it.fields?.st !== 'sanada');
+      y = kpis([[pends.length, 'Pendências', NAVY], [ab.filter(x => (x.it.fields?.prio || 'Normal') === 'Urgente').length, 'Críticas abertas', RED], [ab.length, 'Abertas', ORG], [pends.length - ab.length, 'Sanadas', GRN]], y);
       const head = () => { doc.setFillColor(...NAVY); doc.rect(M, y - 4, CW, 7, 'F');
-        [['Nº', 0], ['Foto', 13], ['Equip.', 34], ['Local', 64], ['Descrição', 98], ['Prioridade', 158]].forEach(([t, dx]) => T(t, M + 2 + dx, y + .6, {s:8.5, b:true, c:[255, 255, 255]})); y += 6; };
+        [['Nº', 0], ['Foto', 27], ['Equip.', 47], ['Descrição', 74], ['Resp. / prazo', 124], ['Situação', 158]].forEach(([t, dx]) => T(t, M + 2 + dx, y + .6, {s:8.5, b:true, c:[255, 255, 255]})); y += 6; };
       head();
       for (const [i, {e, it, code}] of pends.entries()) {
         if (y > H - 40) { y = page('Quadro de pendências', `${local} · ${dateStr}`); head(); }
+        const f = it.fields || {};
         if (i % 2) { doc.setFillColor(246, 248, 250); doc.rect(M, y, CW, 16, 'F'); }
-        const ph = phOf(e, it)[0]; if (ph && !o.noPhotos) fit(ph.tsrc || await img(ph), M + 15, y + 1.5, 18, 13, ph.w || 4, ph.h || 3);
-        T(code, M + 2, y + 9, {s:9, b:true}); T(e.p.name, M + 36, y + 9, {s:9, w: 28, n:2}); T(it.fields?.local || '—', M + 66, y + 9, {s:9, w: 32, n:2});
-        T(it.desc || it.title, M + 100, y + 7, {s:9, w: 56, n:3}); pill(it.fields?.prio || 'Normal', M + 160, y + 9, PCOL[it.fields?.prio] || BLU); y += 16;
+        const ph = phOf(e, it).find(q => q.phase !== 'depois'); if (ph && !o.noPhotos) fit(ph.tsrc || await img(ph), M + 29, y + 1.5, 18, 13, ph.w || 4, ph.h || 3);
+        T(f.code || code, M + 2, y + 9, {s:7.5, b:true, w: 26, n:2}); T(e.p.name, M + 49, y + 9, {s:8.5, w: 25, n:2});
+        T(it.desc || it.title, M + 76, y + 6, {s:8.5, w: 47, n:3}); T(f.resp || '—', M + 126, y + 7, {s:8, w: 32, n:1}); T('Prazo ' + fmtD(f.prazo), M + 126, y + 11.5, {s:7.5, c:MUT});
+        pill(plab(f), M + 160, y + 9, PRGB[pendLvl(f)] || BLU); y += 16;
       }
-      /* pendências: fichas */
+      /* pendências: fichas com antes e depois */
       y = page('Pendências · detalhamento', `${local} · ${dateStr}`);
       for (const [pi, {e, it, code}] of pends.entries()) {
-        const phs = o.noPhotos ? [] : phOf(e, it), rows = Math.ceil(phs.length / 3);
-        if (y + 22 + Math.min(rows, 1) * 52 > H - 22) y = page('Pendências · detalhamento', `${local} · ${dateStr}`);
-        T(`${code} · ${e.p.name}`, M, y, {s:11.5, b:true, c:NAVY}); pill(it.fields?.prio || 'Normal', M + doc.getTextWidth(pdfSafe(`${code} · ${e.p.name}`)) + 4, y, PCOL[it.fields?.prio] || BLU);
+        const f = it.fields || {}, all = o.noPhotos ? [] : phOf(e, it), bef = all.filter(q => q.phase !== 'depois'), aft = all.filter(q => q.phase === 'depois');
+        const rowsN = aft.length ? Math.max(bef.length, aft.length) : Math.ceil(bef.length / 3);
+        if (y + 30 + Math.min(rowsN, 1) * 58 > H - 22) y = page('Pendências · detalhamento', `${local} · ${dateStr}`);
+        const ttl = `${f.code || code} · ${e.p.name}`;
+        T(ttl, M, y, {s:11.5, b:true, c:NAVY}); pill(plab(f), M + doc.getTextWidth(pdfSafe(ttl)) + 4, y, PRGB[pendLvl(f)] || BLU);
         doc.setDrawColor(...AMB); doc.setLineWidth(.6); doc.line(M, y + 2, W - M, y + 2); doc.setLineWidth(.2); y += 8;
         y += T(it.desc || '', M, y, {s:10, w: CW}) * 4.6;
-        if (it.fields?.local) { T('Local: ' + it.fields.local, M, y, {s:9, c:MUT}); y += 6; }
-        const cw = (CW - 8) / 3;
-        for (let k = 0; k < phs.length; k++) {
-          if (k % 3 === 0 && k) y += 52; if (y + 50 > H - 20) { y = page('Pendências · detalhamento', `${local} · ${dateStr}`); }
-          const x = M + (k % 3) * (cw + 4); doc.setFillColor(238, 241, 244); doc.rect(x, y, cw, 40, 'F');
-          fit(await img(phs[k]), x, y, cw, 40, phs[k].w, phs[k].h);
-          const lab = `${pi + 1}.${k + 1}`; pill(lab, x, y + 45, NAVY); T(phs[k].note || '', x + 12, y + 45, {s:8.5, w: cw - 12, n:1});
+        const meta = [f.disc ? 'Disciplina: ' + f.disc : '', f.local ? 'Local: ' + f.local : '', f.resp ? 'Responsável: ' + f.resp : '', f.prazo ? 'Prazo: ' + fmtD(f.prazo) : '', f.st === 'sanada' && f.sanAt ? 'Sanada em ' + new Date(f.sanAt).toLocaleDateString('pt-BR') : ''].filter(Boolean).join('   ·   ');
+        if (meta) { T(meta, M, y, {s:8.5, c:MUT, w: CW, n:2}); y += 7; }
+        if (aft.length) {
+          const cw = (CW - 6) / 2;
+          for (let k = 0; k < rowsN; k++) {
+            if (y + 56 > H - 20) y = page('Pendências · detalhamento', `${local} · ${dateStr}`);
+            for (const [col, arr, lb, c] of [[0, bef, 'ANTES', RED], [1, aft, 'DEPOIS', GRN]]) { const q = arr[k]; if (!q) continue; const x = M + col * (cw + 6);
+              doc.setFillColor(238, 241, 244); doc.rect(x, y, cw, 46, 'F'); fit(await img(q), x, y, cw, 46, q.w, q.h);
+              pill(lb, x, y + 51, c); T(q.note || new Date(q.takenAt || Date.now()).toLocaleDateString('pt-BR'), x + 17, y + 51, {s:8, c:MUT, w: cw - 18, n:1}); }
+            y += 58;
+          }
+        } else {
+          const cw = (CW - 8) / 3;
+          for (let k = 0; k < bef.length; k++) {
+            if (k % 3 === 0 && k) y += 52; if (y + 50 > H - 20) { y = page('Pendências · detalhamento', `${local} · ${dateStr}`); }
+            const x = M + (k % 3) * (cw + 4); doc.setFillColor(238, 241, 244); doc.rect(x, y, cw, 40, 'F');
+            fit(await img(bef[k]), x, y, cw, 40, bef[k].w, bef[k].h);
+            pill(`${pi + 1}.${k + 1}`, x, y + 45, NAVY); T(bef[k].note || '', x + 12, y + 45, {s:8.5, w: cw - 12, n:1});
+          }
+          y += bef.length ? 56 : 4;
         }
-        y += phs.length ? 56 : 4;
       }
     }
 
@@ -2454,7 +2563,8 @@ async function makeReport(o){
       pins.forEach(pin => {
         const px = ox + pin.x * ww, py = oy + pin.y * hh;
         const eqx = eqs.find(x => x.p.id === pin.pid), pm = pinMeas(eqx?.items.find(i => i.step === pin.key));
-        const col = pm.lvl !== 'none' ? ST_RGB[pm.lvl] : (PIN_TCOL[pin.t] || BLU);
+        const pit = pin.t === 'pend' ? eqx?.items.find(i => i.id === pin.itemId) : null;
+        const col = pin.t === 'pend' ? ({Urgente: RED, Alta: ORG, Normal: BLU, san: GRN})[pendLvl(pit?.fields)] : pm.lvl !== 'none' ? ST_RGB[pm.lvl] : (PIN_TCOL[pin.t] || BLU);
         if (pm.v !== null) { const tl = fmtN(pm.v, 0) + ' m³/h'; doc.setFontSize(6); doc.setFont('helvetica', 'bold'); const tw = doc.getTextWidth(pdfSafe(tl)) + 2.4;
           doc.setFillColor(255, 255, 255); doc.setDrawColor(...col); doc.setLineWidth(.3); doc.roundedRect(px + 4, py - 2.2, tw, 3.8, 1, 1, 'FD'); T(tl, px + 5.2, py + .6, {s:6, b:true, c:[29, 34, 41]}); }
         doc.setFillColor(...col); doc.setDrawColor(255, 255, 255); doc.setLineWidth(.5);
@@ -2489,7 +2599,7 @@ async function makeReport(o){
 
     /* equipamentos */
     const HV = HVAC_STEPS, num = v => numVal(v);
-    for (const [ei, e] of eqs.entries()) {
+    for (const [ei, e] of eqs.entries()) { if (o.onlyPend) break;
       const n = ei + 1, pav = e.path[e.path.length - 1]?.name || '', hdr = `${n}. ${e.p.name}`, hr = `${pav} · ${dateStr}`;
       const its = e.items.filter(i => i.kind !== 'pend' && !i.na), labels = new Map(); let k = 0;
       its.forEach(it => phOf(e, it).forEach(ph => labels.set(ph.id, `${n}.${++k}`)));
@@ -2652,11 +2762,12 @@ async function compileSheet(fid){
     <div class="field"><label class="lb" for="cp-name">Nome do arquivo</label><input class="inp" id="cp-name" maxlength="40" value="${esc(base)}"></div>
     <div class="field"><label class="lb" for="cp-doc">Nº do documento</label><input class="inp" id="cp-doc" inputmode="numeric" value="${esc(f.docNumber)}"></div>
     <label class="check"><input type="checkbox" id="cp-ph" checked>Incluir fotos no relatório</label>
+    <label class="check"><input type="checkbox" id="cp-op">Somente pendências (para cobrar a instaladora)</label>
     ${rv}<button class="btn primary block" id="cp-go">${I.pdf}Gerar PDF</button>`);
   $('#cp-go', s).addEventListener('click', async () => {
     const d = $('#cp-doc', s).value.trim(); if (d && d !== String(f.docNumber)) { f.docNumber = d; await put('folders', f); }
     const folders = await getAll('folders'), path = pathTo(fid, folders);
-    const noPh = !$('#cp-ph', s).checked; closeSheet(); makeReport({ids, noPhotos: noPh, docNumber: f.docNumber, filename: ($('#cp-name', s).value.trim() || base) + '.pdf', title: path[1]?.name || f.name,
+    const noPh = !$('#cp-ph', s).checked, onlyP = !!$('#cp-op', s)?.checked; closeSheet(); makeReport({ids, noPhotos: noPh, onlyPend: onlyP, docNumber: f.docNumber, filename: ($('#cp-name', s).value.trim() || base) + '.pdf', title: path[1]?.name || f.name,
       sub: `${ids.length} ${ids.length === 1 ? 'equipamento' : 'equipamentos'}${path.length > 2 ? ' · ' + f.name : ''}`});
   });
 }
@@ -2847,7 +2958,7 @@ async function dailyText(ids, date){
         lines.push(`  ${ic} ${v ? vazLabel(e.p, it) : (f.ponto || it.title)}: ${fmtN(pm.v, 0)} m³/h (Proj ${f.proj || '—'}${pm.d !== null ? ' | ' + (pm.d > 0 ? '+' : '') + pm.d.toFixed(1).replace('.', ',') + '%' : ''})`); }
       else if ((it.step || '').startsWith('casc_')) cascRows(f).filter(r => r.v).forEach(r => { const st = cascStatus(r.crit, r.v);
         lines.push(`  ${st ? '✅' : '❌'} Cascata ${e.p.vazAmb?.[it.step.slice(5)] || ''} (${r.ref || '—'}): ${r.v} Pa [critério ${r.crit || '—'} Pa]`); });
-      else if (it.kind === 'pend') lines.push(`  🔴 Pendência: ${it.desc || it.title}${f.prio ? ' (' + f.prio + ')' : ''}`);
+      else if (it.kind === 'pend') { const l = pendLvl(f); lines.push(`  ${({Urgente:'🔴', Alta:'🟡', Normal:'🔵', san:'🟢'})[l]} ${f.code || 'Pendência'}: ${it.desc || it.title} (${l === 'san' ? 'Sanada' : 'Aberta · ' + PRIO_LABEL[l] + (f.resp ? ' · ' + f.resp : '') + (f.prazo ? ' · prazo ' + f.prazo.split('-').reverse().join('/') : '')})`); }
     }
     if (!lines.length) continue;
     const pav = e.path[e.path.length - 1]?.name || 'Sem pasta';
@@ -2870,6 +2981,114 @@ async function dailySheet(ids, title){
     if (b.dataset.c === 'copy') { try { await navigator.clipboard.writeText(t); toast('Resumo copiado. É só colar no WhatsApp.'); } catch (e) { $('#rd-txt', s).select(); document.execCommand('copy'); toast('Resumo copiado.'); } }
     if (b.dataset.c === 'wa') window.open('https://wa.me/?text=' + encodeURIComponent(t), '_blank'); });
   upd();
+}
+
+/* ---------- pendências (punch list): criticidade, responsável, prazo, sanada, antes/depois ---------- */
+const PEND_CRIT = [['Urgente', 'Crítica'], ['Alta', 'Moderada'], ['Normal', 'Observação']];
+const PRIO_LABEL = {Urgente:'Crítica', Alta:'Moderada', Normal:'Observação'};
+const DISCS = ['HVAC / Dutos', 'Automação', 'Elétrica', 'Hidráulica', 'Civil / Forro'];
+const PEND_CHIPS = ['Falta registro de balanceamento', 'Isolamento danificado', 'Acesso obstruído pelo forro', 'Sem alimentação elétrica', 'Ruído / vibração excessiva', 'Dreno obstruído', 'Falta identificação / TAG'];
+function pavShort(n){ const u = (n || '').toUpperCase(), d = (u.match(/\d+/) || [''])[0];
+  if (/SUB|\bSS\b/.test(u)) return (d || '1') + 'SS'; if (/T[ÉE]RREO/.test(u)) return 'T'; if (/COB/.test(u)) return 'COB'; if (d) return d + 'P';
+  return u.normalize('NFD').replace(/[^A-Z0-9]/g, '').slice(0, 3) || 'G'; }
+async function pendCode(pid){
+  const p = await get('projects', pid), folders = await getAll('folders'), path = pathTo(pid0(p), folders), pav = path[path.length - 1];
+  const sh = pavShort(pav?.name || p.name), ids = pav ? await folderProjectIds(pav.id) : [pid];
+  let mx = 0; for (const id of ids) for (const it of await byIdx('items', 'projectId', id)) { const m = new RegExp('^PEND-' + sh + '-(\\d+)$').exec(it.fields?.code || ''); if (m) mx = Math.max(mx, +m[1]); }
+  return `PEND-${sh}-${String(mx + 1).padStart(2, '0')}`;
+}
+const pendLvl = f => f?.st === 'sanada' ? 'san' : (f?.prio || 'Normal');
+function pendPill(f){ const l = pendLvl(f); return `<span class="ppill pp-${l}">${l === 'san' ? 'Sanada' : PRIO_LABEL[l]}</span>`; }
+function pendPanel(it){
+  const f = it.fields || {}, ref = `data-id="${it.id}"`, san = f.st === 'sanada';
+  return `<div class="panel pendp"><div class="pendp-h"><b>${esc(f.code || 'Pendência')}</b>${pendPill(f)}</div>
+    <div class="field"><span class="lb">Situação</span><div class="seg tseg"><button data-act="pfseg" ${ref} data-k="st" data-v="aberta" aria-pressed="${!san}">Aberta</button><button data-act="pfseg" ${ref} data-k="st" data-v="sanada" aria-pressed="${san}">Sanada</button></div>
+      ${san && f.sanAt ? `<p class="hint" style="margin:6px 0 0">Sanada em ${new Date(f.sanAt).toLocaleDateString('pt-BR')}</p>` : ''}</div>
+    <div class="field"><span class="lb">Criticidade</span><div class="seg tseg">${PEND_CRIT.map(([v, l]) => `<button data-act="pfseg" ${ref} data-k="prio" data-v="${v}" aria-pressed="${(f.prio || 'Normal') === v}">${l}</button>`).join('')}</div></div>
+    <div class="field"><span class="lb">Disciplina</span><div class="seg tseg" style="flex-wrap:wrap">${DISCS.map(d => `<button data-act="pfseg" ${ref} data-k="disc" data-v="${d}" aria-pressed="${f.disc === d}">${d}</button>`).join('')}</div></div>
+    <div class="two"><div class="field"><label class="lb">Responsável</label><input class="inp pf" ${ref} data-k="resp" value="${esc(f.resp || '')}" placeholder="Ex.: Instaladora HVAC"></div>
+      <div class="field"><label class="lb">Prazo</label><input class="inp pf" type="date" ${ref} data-k="prazo" value="${esc(f.prazo || '')}"></div></div>
+    <div class="field"><label class="lb">Local</label><input class="inp pf" ${ref} data-k="local" value="${esc(f.local || '')}"></div>
+    <div class="row"><button class="btn ghost" data-act="pend-after" ${ref}>${I.cam}Foto da correção (depois)</button><button class="btn ghost" data-act="pin-pend" ${ref}>📍 Marcar na planta</button></div></div>`;
+}
+const pfT = {};
+document.addEventListener('input', e => { const el = e.target; if (!el.classList.contains('pf')) return; setSaveState('saving'); const k = el.dataset.id + el.dataset.k; clearTimeout(pfT[k]);
+  pfT[k] = setTimeout(async () => { const it = await get('items', el.dataset.id); if (!it) return; it.fields = {...(it.fields || {}), [el.dataset.k]: el.value}; it.updatedAt = Date.now(); await put('items', it); }, 400); });
+
+
+async function obrasList(){
+  const fs = await getAll('folders'), roots = fs.filter(f => !f.parentId).sort(byName), out = [];
+  for (const r of roots) { const kids = fs.filter(f => f.parentId === r.id).sort(byName); if (kids.length) kids.forEach(k => out.push({id: k.id, name: k.name, cli: r.name})); else out.push({id: r.id, name: r.name, cli: ''}); }
+  return out;
+}
+async function pickObra(){ const l = await obrasList(), last = await getSetting('lastObra'); return (l.find(o => o.id === last) || l[0])?.id || null; }
+async function obraOf(fid){ const fs = await getAll('folders'), path = pathTo(fid, fs); return (path[1] || path[0])?.id || null; }
+document.addEventListener('change', e => { if (e.target.classList && e.target.classList.contains('obsel')) go({name:'obra', id: e.target.value}); });
+/* ---------- painel da obra (pavimentos, mapa, TAB, cascata e pendências) ---------- */
+async function renderObra(){
+  const folders = await getAll('folders'), obra = folders.find(f => f.id === view.id); if (!obra) return go({name:'folder', id:null});
+  const path = pathTo(obra.id, folders), pavs = folders.filter(f => f.parentId === obra.id).sort(byName);
+  const pav = pavs.find(f => f.id === view.pav) || pavs[0] || obra; view.pav = pav.id; curFolderId = pav.id; setSetting('lastObra', obra.id).catch(() => {});
+  const ids = await folderProjectIds(pav.id), projects = (await Promise.all(ids.map(id => get('projects', id)))).filter(Boolean).sort(byName);
+  const items = (await Promise.all(ids.map(id => byIdx('items', 'projectId', id)))).flat();
+  const counts = {}; for (const pv of pavs) counts[pv.id] = (await folderProjectIds(pv.id)).length;
+  const meas = items.filter(i => { const v = vazParse(i.step); return (v && v.t) || (i.step || '').startsWith('hid_'); }).map(i => ({i, ...pinMeas(i)}));
+  const withDev = meas.filter(m => m.d !== null), okN = withDev.filter(m => m.lvl === 'ok').length;
+  const pends = items.filter(i => i.kind === 'pend'), abertas = pends.filter(i => i.fields?.st !== 'sanada');
+  const plants = await plantsUp(pav.id), pl = plants.find(x => x.projectId === 'folder:' + pav.id) || plants[0];
+  const layer = view.ol || 'all', oz = view.oz || 1;
+  const lvlOf = d => d === null ? 'none' : Math.abs(d) <= 10 ? 'ok' : Math.abs(d) <= 20 ? 'warn' : 'bad';
+  const fmtDv = d => d === null ? '—' : (d > 0 ? '+' : '') + d.toFixed(1).replace('.', ',') + '%';
+  const pinsHtml = pl ? (pl.pins || []).filter(pn => ids.includes(pn.pid)).filter(pn => layer === 'all' || (layer === 'pend' ? pn.t === 'pend' : pn.t !== 'pend')).map(pn => {
+    if (pn.t === 'pend') { const it = items.find(i => i.id === pn.itemId); if (!it) return '';
+      return `<button class="obpin pd-${pendLvl(it.fields)}" data-act="open-item" data-id="${it.id}" style="left:${pn.x * 100}%;top:${pn.y * 100}%">! ${esc(it.fields?.code || pn.label || 'PEND')}</button>`; }
+    const it = items.find(i => i.projectId === pn.pid && i.step === pn.key); if (!it) return ''; const m = pinMeas(it);
+    return `<button class="obpin st-${m.lvl}" data-act="mopen" data-id="${it.id}" style="left:${pn.x * 100}%;top:${pn.y * 100}%">${esc(it.fields?.tag || pn.label || '')}${m.v !== null ? ' • ' + fmtN(m.v, 0) : ''}</button>`;
+  }).join('') : '';
+  const casc = items.filter(i => (i.step || '').startsWith('casc_')).flatMap(i => { const p = projects.find(x => x.id === i.projectId);
+    return cascRows(i.fields || {}).filter(r => r.ref || r.v).map(r => ({i, r, amb: p?.vazAmb?.[i.step.slice(5)] || '', st: cascStatus(r.crit, r.v)})); });
+  const ambCards = projects.flatMap(p => { const its = items.filter(i => i.projectId === p.id), gs = [...new Set(its.map(i => vazParse(i.step)).filter(v => v && v.t).map(v => v.g))].sort((a, b) => a - b);
+    return gs.map(g => { const mem = its.filter(i => vazParse(i.step)?.g === g && vazParse(i.step)?.t).sort(byOrder), b = ambBalance(p, mem, g);
+      return `<div class="obcard"><div class="obcard-h"><div><b>${esc(p.vazAmb?.[g] || 'Ambiente ' + g)}</b><span>${esc(p.name)}${b.vol ? ' · Vol ' + fmtN(b.vol, 1) + ' m³' : ''}</span></div>
+        <div class="obbal">Ins <b>${fmtN(b.ins, 0)}</b> · Exa/Ret <b>${fmtN(b.out, 0)}</b><br>Bal <b class="${b.bal >= 0 ? 'pos' : 'neg'}">${b.bal > 0 ? '+' : ''}${fmtN(b.bal, 0)} m³/h</b>${b.ach !== null ? ' (' + b.ach.toFixed(1).replace('.', ',') + ' ACH)' : ''}</div></div>
+        ${mem.map(i => { const m = pinMeas(i), f = i.fields || {}; return `<button class="obrow" data-act="mopen" data-id="${i.id}"><span><b>${esc(f.tag || f.pin || VZT[vazParse(i.step).t] + ' ' + vazParse(i.step).n)}</b><small>${esc([f.term, f.local].filter(Boolean).join(' · ') || VZT[vazParse(i.step).t])}</small><small>Proj: ${esc(f.proj || '—')} m³/h · Med: ${m.v !== null ? fmtN(m.v, 0) : '—'} m³/h</small></span><span class="mdev d-${m.lvl}">${fmtDv(m.d)} ${m.lvl === 'ok' ? 'OK' : m.lvl === 'warn' ? 'Ajuste' : m.lvl === 'bad' ? 'Fora' : ''}</span></button>`; }).join('')}</div>`; }); }).join('');
+  const title = path.map(f => f.name).join(' · ');
+  app.innerHTML = `
+  <header class="obtop"><span class="rcbadge">RC<small>v${APP_VERSION}</small></span>
+    <div class="obtop-t"><small>OBRA EM CAMPO <span class="offok">● Offline pronto</span></small>
+      <select class="obsel" aria-label="Escolher obra">${(await obrasList()).map(o => `<option value="${o.id}" ${o.id === obra.id ? 'selected' : ''}>${esc(o.cli ? o.name + ' · ' + o.cli : o.name)}</option>`).join('')}</select></div>
+    <button class="btn obbtn-g" data-act="ob-daily" data-t="${esc(obra.name + ' · ' + pav.name)}">${I.text}<span>Resumo do Dia</span></button>
+    <button class="btn obbtn-d" data-act="ob-pdf">${I.pdf}<span>Emitir PDF</span></button>
+    <button class="icon-btn obmenu" data-act="ob-nav" aria-label="Menu">${I.more}</button></header>
+  <nav class="obpavs"><span>PAVIMENTO:</span>${pavs.map(pv => `<button data-act="ob-pav" data-id="${pv.id}" aria-pressed="${pv.id === pav.id}">${esc(pv.name)} <i>${counts[pv.id]}</i></button>`).join('')}<button class="obaddpav" data-act="ob-addpav">+ Pavimento</button></nav>
+  <main class="obmain">
+    <div class="obhead"><div><h1>${esc(pav.name)}</h1><p>${esc(title)} · Critério TAB ±10%</p></div>
+      <div class="obstats"><span>TAB: <b>${okN}/${withDev.length}</b></span><span>Equipamentos: <b>${projects.length}</b></span><span>Pendências: <b class="bad">${abertas.length}</b></span></div></div>
+    <section class="obpanel">
+      <div class="obbar"><div class="chips" style="margin:0">${[['all', 'Todos os pinos'], ['tab', 'TAB / Vazão'], ['pend', 'Pendências']].map(([k, l]) => `<button class="chip" data-act="ob-layer" data-f="${k}" aria-pressed="${layer === k}">${l}</button>`).join('')}</div>
+        <div class="obzoom"><button data-act="ob-zoom" data-d="-0.5">−</button><span>${Math.round(oz * 100)}%</span><button data-act="ob-zoom" data-d="0.5">+</button>
+        ${projects[0] ? `<button class="obedit" data-act="ob-map" data-id="${projects[0].id}">✎ Editar no mapa</button>` : ''}</div></div>
+      ${pl ? `<div class="obmap"><div class="obwrap" id="obwrap" style="width:${oz * 100}%;max-width:${oz === 1 ? '980px' : 'none'}"><img src="${phSrc(pl)}" alt="" id="obimg"><canvas id="obcv"></canvas>${pinsHtml}</div></div>
+        <div class="obleg"><span><i style="background:#059669"></i>OK / aprovado</span><span><i style="background:#D97706"></i>Ajuste fino / moderada</span><span><i style="background:#E11D48"></i>Fora / crítica</span><span><i style="background:#2563EB"></i>Observação</span></div>`
+      : `<p class="hint" style="padding:16px">Nenhuma planta neste pavimento. Na pasta, toque nos ⋮ → Plantas do projeto.</p>`}
+    </section>
+    <section class="obpanel"><div class="obsec obsec-row"><div><b>Equipamentos do pavimento</b><small>${projects.length} ${projects.length === 1 ? 'equipamento' : 'equipamentos'} · toque para inspecionar</small></div>
+      <button class="btn obbtn-t" data-act="new-report">${I.plus}<span>Novo equipamento</span></button></div>
+      ${projects.map(p => { const its = items.filter(i => i.projectId === p.id), ms = its.filter(i => vazParse(i.step)?.t || (i.step || '').startsWith('hid_')).map(pinMeas).filter(m => m.d !== null);
+        const okc = ms.filter(m => m.lvl === 'ok').length, pc = its.filter(i => i.kind === 'pend' && i.fields?.st !== 'sanada').length;
+        return `<button class="obrow" data-act="open-project" data-id="${p.id}"><span class="obeq">${I.clip}</span><span><b>${esc(p.name)}</b><small>${esc(tplOf(p).name)}${ms.length ? ' · TAB ' + okc + '/' + ms.length : ''}${pc ? ' · ' + pc + ' pendência(s)' : ''}</small></span>${chev}</button>`; }).join('') || '<p class="hint" style="padding:0 16px 16px">Nenhum equipamento neste pavimento.</p>'}</section>
+    ${casc.length ? `<section class="obpanel"><div class="obsec"><b>Efeito cascata &amp; pressão diferencial (ΔP)</b><small>Sequência de referência entre ambientes adjacentes</small></div>
+      ${casc.map((c, k) => `<button class="obrow" data-act="mopen" data-id="${c.i.id}"><span class="obn">${k + 1}</span><span><b>${esc(c.r.ref || c.amb)}</b><small>${esc(c.amb)} · Critério exigido: ${esc(c.r.crit || '—')} Pa</small></span>
+        <span class="obdp"><small>ΔP medido</small><b>${esc(c.r.v || '—')} Pa</b></span><span class="mdev d-${c.st === null ? 'none' : c.st ? 'ok' : 'bad'}">${c.st === null ? '—' : c.st ? 'OK' : 'Fora'}</span></button>`).join('')}</section>` : ''}
+    <section class="obpanel"><div class="obsec"><b>TAB &amp; vazão por ambiente</b><small>Balanço automático de insuflamento × retorno/exaustão</small></div>
+      ${ambCards || '<p class="hint" style="padding:0 16px 16px">Nenhuma medição de vazão neste pavimento ainda.</p>'}</section>
+    ${pends.length ? `<section class="obpanel"><div class="obsec"><b>Pendências</b><small>${abertas.length} abertas · ${pends.length - abertas.length} sanadas</small></div>
+      ${pends.map(i => { const f = i.fields || {}; return `<button class="obrow" data-act="open-item" data-id="${i.id}"><span><b>${esc(f.code || 'Pendência')}</b><small>${esc(i.desc || i.title)}</small><small>${esc([f.resp, f.prazo ? 'prazo ' + f.prazo.split('-').reverse().join('/') : ''].filter(Boolean).join(' · '))}</small></span>${pendPill(f)}</button>`; }).join('')}</section>` : ''}
+  </main>`;
+  if (pl && (pl.areas || []).some(a => ids.includes(a.pid))) {
+    const im = $('#obimg'); const go2 = () => { try { const mask = buildWallMask(im, 1400), cv = $('#obcv'); renderPlantAreasCanvas(cv, mask, (pl.areas || []).filter(a => ids.includes(a.pid)), null, '#0F766E'); } catch (e) {} };
+    if (im.complete) go2(); else im.onload = go2;
+  }
 }
 /* ---------- empresa ---------- */
 async function companySheet(pid){
@@ -3068,6 +3287,7 @@ async function shareSheet(pid){
 </div>
     <p class="hint" style="margin:-4px 0 16px">${nPh} ${nPh === 1 ? 'foto' : 'fotos'} no relatório.</p>
     <label class="check"><input type="checkbox" id="sh-ph" checked>Incluir fotos no relatório</label>
+    <label class="check"><input type="checkbox" id="sh-op">Somente pendências (para cobrar a instaladora)</label>
     ${rv}<button class="btn primary block" id="sh-go">${I.pdf}Gerar PDF</button>`);
   $('#sh-name', s).addEventListener('input', e => { $('#sh-cnt', s).textContent = `${e.target.value.length}/40`; });
   $('#sh-go', s).addEventListener('click', async () => {
@@ -3076,7 +3296,7 @@ async function shareSheet(pid){
     const opts = {filename: ($('#sh-name', s).value.trim() || base) + '.pdf', perPage: 4,
       includeEmpty: false, showText: true};
     const fl = await getAll('folders'), pth = pathTo(pid0(p), fl);
-    const noPh = !$('#sh-ph', s).checked; closeSheet(); makeReport({ids:[pid], noPhotos: noPh, kind: tplOf(p).guided ? tplOf(p).name.toUpperCase() : 'INSPEÇÃO', docNumber: p.docNumber, filename: opts.filename, title: pth[1]?.name || p.name,
+    const noPh = !$('#sh-ph', s).checked, onlyP = !!$('#sh-op', s)?.checked; closeSheet(); makeReport({ids:[pid], noPhotos: noPh, onlyPend: onlyP, kind: tplOf(p).guided ? tplOf(p).name.toUpperCase() : 'INSPEÇÃO', docNumber: p.docNumber, filename: opts.filename, title: pth[1]?.name || p.name,
       sub: [p.name, pth[pth.length - 1]?.name].filter(Boolean).join(' · ')});
   });
 }
@@ -3284,6 +3504,7 @@ document.addEventListener('click', async e => {
     if (view.name === 'item') saveFields();
     return;
   }
+  if (act === 'pend-after') { camTarget = 'after:' + b.dataset.id; const inp = $('#in-gal'); inp.value = ''; inp.click(); return; }
   if (act === 'cam-step' || act === 'gal-step') {
     camTarget = 'step:' + b.dataset.key;
     const inp = $(act === 'gal-step' ? '#in-gal' : '#in-cam'); inp.value = ''; inp.click(); flushGuideFields(); return;
@@ -3306,9 +3527,27 @@ document.addEventListener('click', async e => {
     case 'folder': go({name:'folder', id: id || null}); break;
     case 'open-project': go({name:'project', id}); break;
     case 'open-item': go({name:'item', id}); break;
+    case 'obra': go({name:'obra', id}); break;
+    case 'go-obra': { const ob = await pickObra(); if (ob) go({name:'obra', id: ob}); else go({name:'folder', id: null}); break; }
+    case 'to-obra': { const p0 = await get('projects', id); const ob = p0 ? await obraOf(pid0(p0)) : null; if (ob) go({name:'obra', id: ob, pav: pid0(p0)}); else go({name:'folder', id: p0 ? pid0(p0) : null}); break; }
+    case 'ob-nav': menu('Menu', [{icon:'folderO', label:'Pastas (organizar clientes, obras e pavimentos)', run: () => go({name:'folder', id: null})},
+      {icon:'flag', label:'Pendências de todas as obras', run: () => go({name:'pend'})}, {icon:'more', label:'Ajustes (empresas, equipe, versão)', run: () => go({name:'more'})}]); break;
+    case 'ob-addpav': promptSheet('Novo pavimento', 'Nome do pavimento', '', 'Criar', async name => { const f = {id: uid(), name, parentId: view.id, createdAt: Date.now()}; await put('folders', f); view.pav = f.id; render(); }); break;
+    case 'ob-pav': view.pav = id; view.oz = 1; render(); break;
+    case 'ob-layer': view.ol = b.dataset.f; render(); break;
+    case 'ob-zoom': view.oz = Math.min(3, Math.max(1, (view.oz || 1) + +b.dataset.d)); render(); break;
+    case 'ob-daily': dailySheet(await folderProjectIds(view.pav || view.id), b.dataset.t || ''); break;
+    case 'ob-pdf': compileSheet(view.pav || view.id); break;
+    case 'ob-map': openPlantMap(id); break;
     case 'goto': if (id) go({name:'item', id}); break;
     case 'filter': view.filter = b.dataset.f; render(); break;
     case 'mfilter': view.mf = b.dataset.f; render(); break;
+    case 'pfseg': { const it = await get('items', id); if (!it) break; const k = b.dataset.k, v = b.dataset.v, f = {...(it.fields || {})};
+      f[k] = k === 'disc' && f[k] === v ? '' : v; if (k === 'st') { f.sanAt = v === 'sanada' ? Date.now() : null; it.status = v === 'sanada' ? 'ok' : 'anomalia'; }
+      it.fields = f; it.updatedAt = Date.now(); await put('items', it); render(); break; }
+    case 'pin-pend': { const it = await get('items', id); if (!it) break; const p0 = await get('projects', it.projectId);
+      if (!(await plantsUp(pid0(p0))).length) { toast('Adicione a planta na pasta (⋮ → Plantas do projeto) para marcar a pendência.', 5000); break; }
+      openPlantMap(it.projectId, {placePend: it.id}); break; }
     case 'clone-meas': { await flushGuideFields(); const v = vazParse(b.dataset.key), src = await ensureStepItem(view.id, b.dataset.key), its = await byIdx('items', 'projectId', view.id);
       const n = Math.max(0, ...its.map(i => vazParse(i.step)).filter(x => x && x.g === v.g && x.t === v.t).map(x => x.n)) + 1, f = src.fields || {};
       const m = /^(.*?)(\d+)$/.exec(f.tag || ''), tag = m ? m[1] + String(+m[2] + 1).padStart(m[2].length, '0') : '';
@@ -3325,7 +3564,7 @@ document.addEventListener('click', async e => {
     case 'mopen': { const it = await get('items', id); if (!it) break; const p0 = await get('projects', it.projectId), its = await byIdx('items', 'projectId', p0.id);
       const v = vazParse(it.step), key = v ? 'vaz_' + v.g : it.step, k = guideSteps(its, p0).findIndex(s => s.key === key);
       if (k < 0) go({name:'item', id: it.id}); else go({name:'guide', id: p0.id, step: k}); break; }
-    case 'theme': { const order = ['dark', 'light', 'auto']; let t = 'dark'; try { t = localStorage.getItem('rc_theme') || 'dark'; } catch (e) {}
+    case 'theme': { const order = ['dark', 'light', 'auto']; let t = 'light'; try { t = localStorage.getItem('rc_theme') || 'light'; } catch (e) {}
       t = order[(order.indexOf(t) + 1) % 3]; try { localStorage.setItem('rc_theme', t); } catch (e) {}
       if (t === 'auto') delete document.documentElement.dataset.theme; else document.documentElement.dataset.theme = t; render(); break; }
     case 'company': profilesSheet(); break;
@@ -3457,6 +3696,10 @@ async function onPhotos(files){
   getSetting('savePhone').then(on => { if (on) setTimeout(() => offerSavePhone(files), 1500); });
   toast('Salvando foto…', 30000);
   try {
+    if (typeof camTarget === 'string' && camTarget.startsWith('after:')) { const id = camTarget.slice(6), before = (await get('items', id))?.photoIds || [];
+      await addPhotos(id, files); const it2 = await get('items', id);
+      for (const x of (it2?.photoIds || []).filter(x => !before.includes(x))) { const ph = await get('photos', x); if (ph) { ph.phase = 'depois'; await put('photos', ph); } }
+      hideToast(); toast('Foto da correção (depois) salva.'); await render(); return; }
     if (typeof camTarget === 'string' && camTarget.startsWith('step:')) { await flushGuideFields(); const it = await ensureStepItem(view.id, camTarget.slice(5)); await addPhotos(it.id, files); hideToast(); await render(); return; }
     if (camTarget === 'new') { const it = await createItem(view.id); await addPhotos(it.id, files); hideToast(); go({name:'item', id: it.id}); }
     else if (camTarget) { await addPhotos(camTarget, files); hideToast(); await render(); const strip = $('.photos'); if (strip) strip.scrollLeft = strip.scrollWidth; }
