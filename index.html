@@ -296,6 +296,8 @@ textarea.inp{min-height:120px;resize:vertical;line-height:1.5}
 .vdevrow{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:2px 0 12px}.vdevrow .text-btn{margin-left:auto}
 .map-wrap .map-pin.st-ok{background:#16A34A}.map-wrap .map-pin.st-warn{background:#D97706}.map-wrap .map-pin.st-bad{background:#E11D48}
 .map-pin small{position:absolute;left:100%;top:50%;transform:translateY(-50%);margin-left:6px;background:rgba(17,19,23,.9);color:#fff;font-size:11px;font-weight:700;padding:3px 7px;border-radius:7px;white-space:nowrap;pointer-events:none;border:1px solid rgba(255,255,255,.15)}
+.cascrow{border:1px solid var(--line);border-radius:12px;padding:10px 12px 2px;margin-bottom:10px}.cascrow-t{display:flex;justify-content:space-between;align-items:center;font-weight:700;font-size:13.5px;margin-bottom:8px}
+.balbox{background:var(--surface2);border-radius:10px;padding:8px 10px;font-size:12.5px;line-height:1.5}.balbox .pos{color:var(--accent-text)}.balbox .neg{color:var(--warn)}
 .hidden{display:none!important}
 .ptitle{font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--accent-text);margin:0 0 12px}
 .tseg{grid-template-columns:repeat(auto-fit,minmax(90px,1fr))}
@@ -432,7 +434,7 @@ async function os(name, mode = 'readonly'){ const d = await idb(); return d.tran
 const getAll = async n => P((await os(n)).getAll());
 const byIdx = async (n, idx, v) => P((await os(n)).index(idx).getAll(v));
 const get = async (n, k) => P((await os(n)).get(k));
-const APP_VERSION = 22, APP_DATE = '20/11/2026';
+const APP_VERSION = 23, APP_DATE = '26/11/2026';
 const SYNCED = ['folders', 'projects', 'items', 'photos'];
 const rawPut = async (n, v) => P((await os(n, 'readwrite')).put(v));
 const put = async (n, v) => { if (SYNCED.includes(n) && v) v.mt = Date.now(); let r; try { r = await rawPut(n, v); } catch (e) { setSaveState('err'); throw e; } cloudPush(n, [v]); if (n !== 'settings') setSaveState('ok'); return r; };
@@ -1407,8 +1409,8 @@ const doneOf = (s, items) => ['filled', 'na'].includes(stOf(s, items));
 function vazLabel(p, it){
   const v = vazParse(it.step);
   if (!v) return it.title;
-  const pin = it.fields?.pin ? it.fields.pin + ' · ' : '';
-  return pin + (`${p?.vazAmb?.[v.g] || 'Ambiente ' + v.g} · ${VZT[v.t] || it.fields?.tipo || ''} ${v.t ? v.n : ''}`.trim() + (it.fields?.local ? ' · ' + it.fields.local : ''));
+  const pin = (it.fields?.pin ? it.fields.pin + ' · ' : '') + (it.fields?.tag ? it.fields.tag + ' · ' : '');
+  return pin + (`${p?.vazAmb?.[v.g] || 'Ambiente ' + v.g} · ${VZT[v.t] || it.fields?.tipo || ''} ${v.t ? v.n : ''}`.trim() + (it.fields?.term ? ' · ' + it.fields.term : '') + (it.fields?.local ? ' · ' + it.fields.local : ''));
 }
 const ST_LABEL = {none:'Não iniciado', partial:'Registro parcial', filled:'Preenchido', na:'Não se aplica'};
 const RES_LABEL = {ok:'Conforme', anomalia:'Não conforme', none:'Não avaliado'};
@@ -1417,7 +1419,7 @@ async function ensureStepItem(pid, key){
   let it = items.find(x => x.step === key); if (it) return it;
   const p = await get('projects', pid);
   const vz = vazParse(key);
-  const s = (key || '').startsWith('vamb_') ? {t:'Foto do ambiente', order: 1 + (+key.slice(5)) / 100 + .0001} : vz && vz.t ? {t: `${VZT[vz.t]} ${vz.n}`, order: 1 + vz.g / 100 + Object.keys(VZT).indexOf(vz.t) / 1000 + vz.n / 100000}
+  const s = (key || '').startsWith('casc_') ? {t:'Pressurização', order: 1 + (+key.slice(5)) / 100 + .0002} : (key || '').startsWith('vamb_') ? {t:'Foto do ambiente', order: 1 + (+key.slice(5)) / 100 + .0001} : vz && vz.t ? {t: `${VZT[vz.t]} ${vz.n}`, order: 1 + vz.g / 100 + Object.keys(VZT).indexOf(vz.t) / 1000 + vz.n / 100000}
     : guideSteps(items.concat([{step: key}]), p).find(x => x.key === key) || {t: key, order: 500};
   it = await createItem(pid, {title: s.t, desc: ''});
   Object.assign(it, {step: key, kind:'step', order: s.order}); if (vz && vz.t) it.fields = {tipo: VZT[vz.t], grelha: p.lastGrille || undefined};
@@ -2232,6 +2234,9 @@ async function renderVazGroup(p, items, st, i, s){
       const key = `vaz_${g}_${t}_${n}`, it = mem.find(m => m.step === key), fl = it?.fields || {};
       const phs = it ? (await Promise.all((it.photoIds || []).map(id => get('photos', id)))).filter(Boolean) : [], ref = `data-key="${key}"`;
       html += `<div class="panel">${cnt > 1 ? `<span class="lb">${esc(fl.local || 'Medição ' + n)} · <span class="st-${stepState(it)}">${ST_LABEL[stepState(it)]}</span></span>` : `<span class="lb st-${stepState(it)}">${ST_LABEL[stepState(it)]}</span>`}
+        <div class="two"><div class="field"><label class="lb">TAG do terminal <span style="font-weight:400;color:var(--muted)">opcional</span></label><input class="inp gf" ${ref} data-k="tag" value="${esc(fl.tag || '')}" placeholder="Ex.: DIF-1501"></div>
+        <div class="field" style="display:flex;align-items:flex-end"><button class="btn ghost block" data-act="clone-meas" ${ref}>⧉ Clonar +1</button></div></div>
+        <div class="field"><span class="lb">Tipo de terminal</span><div class="seg tseg">${TERMS.map(o => `<button data-act="gseg" ${ref} data-k="term" data-v="${o}" aria-pressed="${fl.term === o}">${o}</button>`).join('')}</div></div>
         <div class="field"><label class="lb">Local do terminal <span style="font-weight:400;color:var(--muted)">opcional</span></label><input class="inp gf" ${ref} data-k="local" value="${esc(fl.local || '')}" placeholder="Ex.: difusor próximo à janela"></div>
         <div class="field"><span class="lb">Método de medição</span><div class="seg tseg">${[['bal', 'Balômetro (m³/h direto)'], ['ane', 'Anemômetro (m/s × área)']].map(([k, l]) => `<button data-act="gseg" ${ref} data-k="met" data-v="${k}" aria-pressed="${(fl.met || 'bal') === k}">${l}</button>`).join('')}</div></div>
         ${fl.met === 'ane' ? `<div class="field"><label class="lb">Velocidade média (m/s) <span style="font-weight:400;color:var(--muted)">ou registre nas fotos</span></label><input class="inp gf" ${ref} data-k="vel" inputmode="decimal" value="${esc(fl.vel || '')}" placeholder="Ex.: 2,55"></div>` : ''}
@@ -2261,7 +2266,9 @@ async function renderVazGroup(p, items, st, i, s){
     <div class="gsec">Vazão de ar · <span class="st-${state}">${ST_LABEL[state]}</span></div><div class="savechip" data-save></div>
     <div class="gq">Medição de vazão por ambiente. Registre projeto, medida e as fotos das leituras de cada terminal. Leituras negativas (retorno, exaustão) são aceitas: o cálculo usa o valor absoluto.</div>
     <div class="field"><label class="lb">Ambiente</label><input class="inp ambname" data-g="${g}" value="${esc(p.vazAmb?.[g] || '')}" placeholder="Ex.: Sala 1203 / Recepção"></div>
+    ${balHtml(p, mem, g)}
     ${ambHtml}
+    ${await cascHtml(p, items, g)}
     ${html}
     ${extra.length ? `<div class="row" style="margin-bottom:10px">${extra.map(t => `<button class="btn ghost" data-act="add-type" data-g="${g}" data-t="${t}">${I.plus}${VZT[t]}</button>`).join('')}</div>` : ''}
     <button class="btn ghost block" data-act="add-amb" style="margin-bottom:10px">${I.plus}Adicionar outro ambiente</button>
@@ -2518,6 +2525,28 @@ async function makeReport(o){
             doc.setDrawColor(...LN); doc.line(M, y + 2.5, W - M, y + 2.5); y += 7; });
           y += 3;
         }
+        const gs = [...new Set(its.map(i => vazParse(i.step)).filter(v => v && v.t).map(v => v.g))].sort((a, b) => a - b);
+        const bals = gs.map(g => ({g, ...ambBalance(e.p, its.filter(i => vazParse(i.step)?.g === g), g)})).filter(x => x.ins || x.out);
+        if (bals.length) {
+          need(18 + bals.length * 7); y = sec('Balanço de ar por ambiente', y);
+          [['Ambiente', 0], ['Insufl. m³/h', 56], ['Ret.+Exaust.', 84], ['Balanço m³/h', 114], ['Volume m³', 142], ['Renov./h', 164]].forEach(([t, dx]) => T(t.toUpperCase(), M + 2 + dx, y, {s:7, b:true, c:MUT}));
+          doc.setDrawColor(29, 34, 41); doc.line(M, y + 2, W - M, y + 2); y += 7;
+          bals.forEach(x => { T(e.p.vazAmb?.[x.g] || 'Ambiente ' + x.g, M + 2, y, {s:9, b:true, w: 52, n:1}); T(fmtN(x.ins, 0), M + 58, y, {s:9}); T(fmtN(x.out, 0), M + 86, y, {s:9});
+            T((x.bal > 0 ? '+' : '') + fmtN(x.bal, 0), M + 116, y, {s:9, b:true, c: x.bal >= 0 ? BLU : ORG}); T(x.vol ? fmtN(x.vol, 1) : '—', M + 144, y, {s:9}); T(x.ach !== null ? x.ach.toFixed(1).replace('.', ',') : '—', M + 166, y, {s:9});
+            doc.setDrawColor(...LN); doc.line(M, y + 2.5, W - M, y + 2.5); y += 7; });
+          y += 3;
+        }
+        const cs = its.filter(i => (i.step || '').startsWith('casc_')).flatMap(it => cascRows(it.fields || {}).filter(r => r.v || r.ref).map(r => ({it, r})));
+        if (cs.length) {
+          need(20 + cs.length * 7); y = sec('Pressurização · efeito cascata', y);
+          [['Ambiente', 0], ['Entre', 42], ['Critério', 104], ['Medido (Pa)', 126], ['Situação', 152]].forEach(([t, dx]) => T(t.toUpperCase(), M + 2 + dx, y, {s:7.5, b:true, c:MUT}));
+          doc.setDrawColor(29, 34, 41); doc.line(M, y + 2, W - M, y + 2); y += 7;
+          cs.forEach(({it, r}) => { const st = cascStatus(r.crit, r.v), g = it.step.slice(5);
+            T(e.p.vazAmb?.[g] || 'Ambiente ' + g, M + 2, y, {s:9, b:true, w: 38, n:1}); T(r.ref || '—', M + 44, y, {s:9, w: 58, n:1}); T(r.crit ? r.crit + ' Pa' : '—', M + 106, y, {s:9});
+            T(r.v || '—', M + 128, y, {s:9}); T(st === null ? '—' : st ? 'Atende' : 'Não atende', M + 154, y, {s:9, b:true, c: st === null ? MUT : st ? GRN : RED});
+            doc.setDrawColor(...LN); doc.line(M, y + 2.5, W - M, y + 2.5); y += 7; });
+          y += 3;
+        }
         const hd = its.filter(i => (i.step || '').startsWith('hid_') && (phOf(e, i).length || i.fields?.v || i.fields?.proj));
         if (hd.length) {
           need(20 + hd.length * 7); y = sec('TAB hidrônico · tolerância ±10%', y);
@@ -2709,7 +2738,7 @@ function resumoHtml(p, items, mf){
   const ms = items.filter(i => { const v = vazParse(i.step); return (v && v.t) || (i.step || '').startsWith('hid_'); }).map(i => {
     const v = vazParse(i.step), hid = !v, t = hid ? 'hid' : v.t, f = i.fields || {}, a = numVal(f.proj), m = numVal(f.v), b = m === null ? null : Math.abs(m);
     return {i, t, a, b, dev: a && b !== null ? (b - a) / a * 100 : null, noPh: !(i.photoIds || []).length,
-      badge: f.pin || PRE[t] + '-' + String(hid ? +i.step.slice(4) : v.n).padStart(2, '0'),
+      badge: f.tag || f.pin || PRE[t] + '-' + String(hid ? +i.step.slice(4) : v.n).padStart(2, '0'),
       name: hid ? (f.ponto || i.title) : vazLabel(p, i).replace(/^[A-Z]\d+ · /, '')};
   }).sort((x, y) => (x.i.order || 0) - (y.i.order || 0));
   if (!ms.length) return '';
@@ -2759,6 +2788,88 @@ const ST_RGB = {ok:[22, 163, 74], warn:[217, 119, 6], bad:[225, 29, 72]};
 function pinMeas(it){
   const f = it?.fields || {}, a = numVal(f.proj), m = numVal(f.v), v = m === null ? null : Math.abs(m), d = a && v !== null ? (v - a) / a * 100 : null;
   return {v, d, lvl: d === null ? 'none' : Math.abs(d) <= 10 ? 'ok' : Math.abs(d) <= 20 ? 'warn' : 'bad'};
+}
+
+/* ---------- TAB: tipo de terminal e efeito cascata (pressurização) ---------- */
+const TERMS = ['Difusor', 'Grelha', 'Fancoil', 'VAV', 'Exaustor'];
+const CASC_PRESETS = {
+  cir: {l:'Sala cirúrgica', rows:[['Sala × Corredor / circulação', '+5']]},
+  hem: {l:'Hemodinâmica', rows:[['Sala × Corredor / circulação', '+5']]},
+  isoN: {l:'Isolamento (pressão negativa)', rows:[['Quarto × Antecâmara', '-2,5'], ['Antecâmara × Corredor', '-2,5'], ['Banheiro × Quarto', '-2,5']]},
+  isoP: {l:'Isolamento protetor (positivo)', rows:[['Quarto × Antecâmara', '+2,5'], ['Antecâmara × Corredor', '+2,5'], ['Quarto × Banheiro', '+2,5']]},
+  per: {l:'Personalizado', rows:[['', '']]}
+};
+function cascStatus(crit, v){ const c = numVal(crit), m = numVal(v); if (c === null || m === null) return null; return c >= 0 ? m >= c : m <= c; }
+const cascRows = f => { const n = Math.max(1, +f.n || (f.ref || f.crit || f.v ? 1 : 1)); return Array.from({length: n}, (_, i) => { const k = i + 1;
+  return {k, ref: f['ref' + k] ?? (k === 1 ? f.ref : '') ?? '', crit: f['crit' + k] ?? (k === 1 ? f.crit : '') ?? '', v: f['v' + k] ?? (k === 1 ? f.v : '') ?? ''}; }); };
+async function cascHtml(p, items, g){
+  const key = 'casc_' + g, it = items.find(x => x.step === key), f = it?.fields || {}, ref = `data-key="${key}"`;
+  const phs = it ? (await Promise.all((it.photoIds || []).map(id => get('photos', id)))).filter(Boolean) : [];
+  const pill = st => st === null ? '<span class="mdev d-none">—</span>' : st ? '<span class="mdev d-ok">Atende</span>' : '<span class="mdev d-bad">Não atende</span>';
+  return `<div class="panel"><span class="lb">Pressurização · efeito cascata <span style="font-weight:400;color:var(--muted)">opcional</span></span>
+    <div class="field"><span class="lb">Tipo de ambiente</span><div class="seg tseg" style="flex-wrap:wrap">${Object.entries(CASC_PRESETS).map(([k, v]) => `<button data-act="casc-preset" ${ref} data-v="${k}" aria-pressed="${f.preset === k}">${v.l}</button>`).join('')}</div>
+      <p class="hint" style="margin:6px 0 0">Critérios pré-preenchidos são sugestão: confira no projeto (NBR 7256) e edite se precisar.</p></div>
+    ${cascRows(f).map(r => `<div class="cascrow"><div class="cascrow-t">Medição ${r.k} ${pill(cascStatus(r.crit, r.v))}</div>
+      <div class="field"><label class="lb">Entre</label><input class="inp gf" ${ref} data-k="ref${r.k}" value="${esc(r.ref)}" placeholder="Ex.: Quarto × Antecâmara"></div>
+      <div class="two"><div class="field"><label class="lb">Critério (Pa)</label><input class="inp gf" ${ref} data-k="crit${r.k}" inputmode="decimal" value="${esc(r.crit)}" placeholder="+5 ou -2,5"></div>
+      <div class="field"><label class="lb">Medido (Pa)</label><input class="inp gf" ${ref} data-k="v${r.k}" inputmode="decimal" value="${esc(r.v)}" placeholder="Ex.: +6,2"></div></div></div>`).join('')}
+    <button class="btn ghost block" data-act="casc-add" ${ref} style="margin-bottom:10px">${I.plus}Adicionar medição de pressão</button>
+    ${phs.length ? `<div class="gph">${phs.map(ph => `<div class="gphi"><img src="${phSrc(ph, true)}" alt="" data-act="phedit" data-id="${ph.id}"><span>${esc(phRead(ph) || '')}</span></div>`).join('')}</div>` : ''}
+    <div class="row"><button class="btn ghost" data-act="cam-step" ${ref}>${I.cam}Foto do manômetro</button><button class="btn ghost" data-act="gal-step" ${ref}>${I.img}Galeria</button></div></div>`;
+}
+document.addEventListener('change', async e => { const el = e.target; if (el.classList && el.classList.contains('gf') && (el.dataset.key || '').startsWith('casc_') && /^(v|crit)\d+$/.test(el.dataset.k)) { await saveGuideField(el); render(); } });
+
+/* ---------- TAG, clonar +1, balanço do ambiente e resumo do dia ---------- */
+function ambBalance(p, mem, g){
+  const sum = ts => mem.filter(m => ts.includes(vazParse(m.step)?.t)).reduce((a, m) => a + (numVal(m.fields?.v) === null ? 0 : Math.abs(numVal(m.fields.v))), 0);
+  const ins = sum(['ins']), out = sum(['ret', 'exa']), vol = numVal(p.vazVol?.[g]);
+  return {ins, out, bal: ins - out, vol, ach: vol ? ins / vol : null};
+}
+function balHtml(p, mem, g){
+  const b = ambBalance(p, mem, g);
+  return `<div class="two"><div class="field"><label class="lb">Volume do ambiente (m³) <span style="font-weight:400;color:var(--muted)">opcional</span></label><input class="inp ambvol" data-g="${g}" inputmode="decimal" value="${esc(p.vazVol?.[g] || '')}" placeholder="Ex.: 112"></div>
+    <div class="field"><span class="lb">Balanço do ambiente</span><div class="balbox">Insufl. <b>${fmtN(b.ins, 0)}</b> · Ret./exaust. <b>${fmtN(b.out, 0)}</b><br>Balanço <b class="${b.bal >= 0 ? 'pos' : 'neg'}">${b.bal > 0 ? '+' : ''}${fmtN(b.bal, 0)} m³/h</b>${b.ach !== null ? ` · <b>${b.ach.toFixed(1).replace('.', ',')}</b> renov./h` : ''}</div></div></div>`;
+}
+let volT;
+document.addEventListener('input', e => { if (!e.target.classList.contains('ambvol')) return; setSaveState('saving'); clearTimeout(volT);
+  const g = e.target.dataset.g, v = e.target.value; volT = setTimeout(async () => { const p = await get('projects', view.id); p.vazVol = {...(p.vazVol || {}), [g]: v}; await put('projects', p); }, 400); });
+document.addEventListener('change', e => { if (e.target.classList.contains('ambvol')) setTimeout(render, 500); });
+const dayKey = ts => { const d = new Date(ts || 0); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };
+async function dailyText(ids, date){
+  const eqs = await collectReport(ids); let ok = 0, warn = 0, bad = 0; const out = [], groups = new Map();
+  const inDay = it => !date || dayKey(it.updatedAt || it.createdAt) === date;
+  for (const e of eqs) {
+    const lines = [];
+    for (const it of e.items.filter(inDay).sort(byOrder)) {
+      const v = vazParse(it.step), f = it.fields || {};
+      if ((v && v.t) || (it.step || '').startsWith('hid_')) { const pm = pinMeas(it); if (pm.v === null) continue;
+        const ic = pm.lvl === 'ok' ? '✅' : pm.lvl === 'warn' ? '⚠️' : pm.lvl === 'bad' ? '❌' : '•'; if (pm.lvl === 'ok') ok++; else if (pm.lvl === 'warn') warn++; else if (pm.lvl === 'bad') bad++;
+        lines.push(`  ${ic} ${v ? vazLabel(e.p, it) : (f.ponto || it.title)}: ${fmtN(pm.v, 0)} m³/h (Proj ${f.proj || '—'}${pm.d !== null ? ' | ' + (pm.d > 0 ? '+' : '') + pm.d.toFixed(1).replace('.', ',') + '%' : ''})`); }
+      else if ((it.step || '').startsWith('casc_')) cascRows(f).filter(r => r.v).forEach(r => { const st = cascStatus(r.crit, r.v);
+        lines.push(`  ${st ? '✅' : '❌'} Cascata ${e.p.vazAmb?.[it.step.slice(5)] || ''} (${r.ref || '—'}): ${r.v} Pa [critério ${r.crit || '—'} Pa]`); });
+      else if (it.kind === 'pend') lines.push(`  🔴 Pendência: ${it.desc || it.title}${f.prio ? ' (' + f.prio + ')' : ''}`);
+    }
+    if (!lines.length) continue;
+    const pav = e.path[e.path.length - 1]?.name || 'Sem pasta';
+    if (!groups.has(pav)) groups.set(pav, []); groups.get(pav).push(`  *${e.p.name}*`, ...lines);
+  }
+  for (const [pav, ls] of groups) out.push(`*${pav.toUpperCase()}*`, ...ls, '');
+  const d = date ? date.split('-').reverse().join('/') : 'todas as datas', obra = eqs[0]?.path.slice(0, 2).map(f => f.name).join(' · ') || '';
+  return [`*RESUMO DE CAMPO — ${d}*`, obra ? `*Obra:* ${obra}` : '', `*TAB:* ${ok} aprovados | ${warn} ajuste fino | ${bad} fora`, '----------------------------------', '', ...out].filter((l, i) => l !== '' || i > 3).join('\n').trim() || 'Nada registrado nesta data.';
+}
+async function dailySheet(ids, title){
+  const today = dayKey(Date.now());
+  const s = openSheet(`<h2>Resumo do Dia</h2><p class="hint" style="margin:-6px 0 12px">${esc(title || '')} · texto pronto para o grupo do WhatsApp</p>
+    <div class="two"><div class="field"><label class="lb" for="rd-date">Data</label><input class="inp" type="date" id="rd-date" value="${today}"></div>
+    <div class="field" style="display:flex;align-items:flex-end"><label class="check" style="margin:0"><input type="checkbox" id="rd-all">Todas as datas</label></div></div>
+    <div class="field"><label class="lb" for="rd-txt">Texto (pode editar antes de enviar)</label><textarea class="inp" id="rd-txt" style="min-height:240px;font-family:ui-monospace,monospace;font-size:12.5px"></textarea></div>
+    <div class="row"><button class="btn ghost" data-c="copy">Copiar</button><button class="btn primary" data-c="wa">Enviar no WhatsApp</button></div>`);
+  const upd = async () => { $('#rd-txt', s).value = await dailyText(ids, $('#rd-all', s).checked ? null : $('#rd-date', s).value); };
+  s.addEventListener('change', ev => { if (ev.target.id === 'rd-date' || ev.target.id === 'rd-all') upd(); });
+  s.addEventListener('click', async ev => { const b = ev.target.closest('[data-c]'); if (!b) return; const t = $('#rd-txt', s).value;
+    if (b.dataset.c === 'copy') { try { await navigator.clipboard.writeText(t); toast('Resumo copiado. É só colar no WhatsApp.'); } catch (e) { $('#rd-txt', s).select(); document.execCommand('copy'); toast('Resumo copiado.'); } }
+    if (b.dataset.c === 'wa') window.open('https://wa.me/?text=' + encodeURIComponent(t), '_blank'); });
+  upd();
 }
 /* ---------- empresa ---------- */
 async function companySheet(pid){
@@ -3198,6 +3309,14 @@ document.addEventListener('click', async e => {
     case 'goto': if (id) go({name:'item', id}); break;
     case 'filter': view.filter = b.dataset.f; render(); break;
     case 'mfilter': view.mf = b.dataset.f; render(); break;
+    case 'clone-meas': { await flushGuideFields(); const v = vazParse(b.dataset.key), src = await ensureStepItem(view.id, b.dataset.key), its = await byIdx('items', 'projectId', view.id);
+      const n = Math.max(0, ...its.map(i => vazParse(i.step)).filter(x => x && x.g === v.g && x.t === v.t).map(x => x.n)) + 1, f = src.fields || {};
+      const m = /^(.*?)(\d+)$/.exec(f.tag || ''), tag = m ? m[1] + String(+m[2] + 1).padStart(m[2].length, '0') : '';
+      const it = await ensureStepItem(view.id, `vaz_${v.g}_${v.t}_${n}`); it.fields = {...(it.fields || {}), term: f.term || '', met: f.met || '', grelha: f.grelha || '', proj: f.proj || '', tag};
+      await put('items', it); view['n' + v.g + v.t] = Math.max(view['n' + v.g + v.t] || 0, n); toast(`Ponto ${tag || VZT[v.t] + ' ' + n} clonado.`); render(); break; }
+    case 'casc-preset': { await flushGuideFields(); const it = await ensureStepItem(view.id, b.dataset.key), pr = CASC_PRESETS[b.dataset.v], f = {...(it.fields || {}), preset: b.dataset.v, n: pr.rows.length};
+      pr.rows.forEach(([r, c], i) => { f['ref' + (i + 1)] = r; f['crit' + (i + 1)] = c; }); it.fields = f; await put('items', it); render(); break; }
+    case 'casc-add': { await flushGuideFields(); const it = await ensureStepItem(view.id, b.dataset.key); it.fields = {...(it.fields || {}), n: Math.max(1, +it.fields?.n || 1) + 1}; await put('items', it); render(); break; }
     case 'noop': break;
     case 'map-tab': await flushGuideFields(); openPlantMap(id || view.id); break;
     case 'pin-meas': { await flushGuideFields(); const p0 = await get('projects', view.id), ps = await plantsUp(pid0(p0));
@@ -3234,6 +3353,7 @@ document.addEventListener('click', async e => {
       menu(f.name, [
         {icon:'pdf', label:'Gerar relatório da pasta (tudo junto)', run: () => compileSheet(f.id)},
         {icon:'img', label:'Plantas do projeto (para croqui)', run: () => plantsSheet(f.id)},
+        {icon:'text', label:'Resumo do Dia (WhatsApp)', run: async () => dailySheet(await folderProjectIds(f.id), f.name)},
         {icon:'save', label:'Baixar fotos da equipe (pasta toda)', run: async () => dlTeam(await folderProjectIds(f.id))},
         {icon:'img', label: f.logo ? 'Trocar logo do cliente' : 'Logo do cliente (aparece no relatório)', run: () => { flogoTarget = f.id; $('#in-flogo').value = ''; $('#in-flogo').click(); }},
         ...(f.logo ? [{icon:'trash', label:'Remover logo do cliente', run: async () => { delete f.logo; await put('folders', f); toast('Logo removido.'); }}] : []),
@@ -3249,6 +3369,7 @@ document.addEventListener('click', async e => {
       menu(p.name, [
         ...(view.name !== 'project' ? [{icon:'clip', label:'Abrir relatório', run: () => go({name:'project', id: p.id})}] : []),
         {icon:'pdf', label:'Compartilhar PDF', run: () => shareSheet(p.id)},
+        {icon:'text', label:'Resumo do Dia (WhatsApp)', run: () => dailySheet([p.id], p.name)},
         {icon:'save', label:'Baixar fotos da equipe', run: () => dlTeam([p.id])},
         {icon:'map', label:'Mapa na planta', run: () => openPlantMap(p.id)},
         {icon:'sheet', label:'Importar planilha neste relatório', run: () => startImport(p.id, pid0(p))},
