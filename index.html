@@ -367,6 +367,7 @@ label.lb,.lb{font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:
 .vblk-t{font-size:12px;letter-spacing:.08em}
 .mbadge,.mtxt b,.obrow b{font-family:ui-monospace,"JetBrains Mono",monospace}
 .btn{border-radius:14px}.btn.ghost{border-color:#CBD5E1}
+.comrow{display:flex;justify-content:space-between;gap:10px;padding:9px 0;border-top:1px solid var(--line);font-size:13.5px}.comrow b.c-ok{color:var(--ok)}.comrow b.c-bad{color:var(--bad)}
 .hidden{display:none!important}
 .ptitle{font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--accent-text);margin:0 0 12px}
 .tseg{grid-template-columns:repeat(auto-fit,minmax(90px,1fr))}
@@ -505,7 +506,7 @@ async function os(name, mode = 'readonly'){ const d = await idb(); return d.tran
 const getAll = async n => P((await os(n)).getAll());
 const byIdx = async (n, idx, v) => P((await os(n)).index(idx).getAll(v));
 const get = async (n, k) => P((await os(n)).get(k));
-const APP_VERSION = 24, APP_DATE = '26/11/2026';
+const APP_VERSION = 25, APP_DATE = '26/11/2026';
 const SYNCED = ['folders', 'projects', 'items', 'photos'];
 const rawPut = async (n, v) => P((await os(n, 'readwrite')).put(v));
 const put = async (n, v) => { if (SYNCED.includes(n) && v) v.mt = Date.now(); let r; try { r = await rawPut(n, v); } catch (e) { setSaveState('err'); throw e; } cloudPush(n, [v]); if (n !== 'settings') setSaveState('ok'); return r; };
@@ -1440,12 +1441,23 @@ const HVAC_STEPS = [
   {key:'i_r', sec:'Elétrica', t:'Corrente Fase R', q:'Corrente de operação na fase R.', fields:[NUM('A')]},
   {key:'i_s', sec:'Elétrica', t:'Corrente Fase S', q:'Corrente de operação na fase S.', fields:[NUM('A')]},
   {key:'i_t', sec:'Elétrica', t:'Corrente Fase T', q:'Corrente de operação na fase T.', fields:[NUM('A')]},
+  {key:'com_ele', sec:'Comissionamento', t:'Motor · elétrica', q:'Partida e performance do motor: correntes por fase contra a nominal da plaqueta, isolação e sentido de rotação.',
+    fields:[{k:'in', l:'Corrente nominal (plaqueta)', u:'A'}, {k:'ir', l:'Corrente fase R', u:'A', req:true}, {k:'is', l:'Corrente fase S', u:'A'}, {k:'it', l:'Corrente fase T', u:'A'},
+      {k:'iso', l:'Isolação (megôhmetro)', u:'MΩ'}, {k:'rot', t:'seg', l:'Sentido de rotação', opts:['OK', 'Invertido']}]},
+  {key:'com_hid', sec:'Comissionamento', t:'Hidráulica · água gelada', q:'Pressões, temperaturas e vazão de água na serpentina ou trocador.',
+    fields:[{k:'pe', l:'Pressão de entrada', u:'bar'}, {k:'ps', l:'Pressão de saída', u:'bar'}, {k:'dps', l:'ΔP na serpentina', u:'kPa'},
+      {k:'te', l:'Temperatura de entrada da água', u:'°C', req:true}, {k:'ts', l:'Temperatura de saída da água', u:'°C'}, {k:'qw', l:'Vazão de água', u:'m³/h'}, {k:'abv', l:'Abertura da válvula', u:'%'}]},
+  {key:'com_psi', sec:'Comissionamento', t:'Ar · psicrometria', q:'Condições do ar na entrada e na saída da serpentina e vazão de ar do equipamento.',
+    fields:[{k:'q', l:'Vazão de ar do equipamento', u:'m³/h'}, {k:'tbse', l:'TBS entrada', u:'°C', req:true}, {k:'tbue', l:'TBU entrada', u:'°C'}, {k:'ure', l:'UR entrada', u:'%'},
+      {k:'tbss', l:'TBS saída', u:'°C'}, {k:'tbus', l:'TBU saída', u:'°C'}, {k:'urs', l:'UR saída', u:'%'}]},
+  {key:'com_fri', sec:'Comissionamento', t:'Circuito frigorífico', q:'Pressões de sucção e descarga, superaquecimento e sub-resfriamento.',
+    fields:[{k:'psuc', l:'Pressão de sucção', u:'bar', req:true}, {k:'pdes', l:'Pressão de descarga', u:'bar'}, {k:'sh', l:'Superaquecimento (SH)', u:'K'}, {k:'sc', l:'Sub-resfriamento (SC)', u:'K'}]},
   {key:'plaqueta', sec:'Identificação', t:'Plaqueta', q:'Registro da plaqueta de identificação do equipamento.'}
 ];
 const ELET = ['v_rs', 'v_st', 'v_tr', 'i_r', 'i_s', 'i_t'];
-const SECTIONS = [['vaz', 'Vazão de ar'], ['hid', 'TAB hidrônico'], ['filtro', 'Pressão diferencial do filtro'], ['amb', 'Temperatura e umidade'], ['elet', 'Tensão e corrente'], ['plaqueta', 'Plaqueta do equipamento']];
+const SECTIONS = [['vaz', 'Vazão de ar'], ['hid', 'TAB hidrônico'], ['filtro', 'Pressão diferencial do filtro'], ['amb', 'Temperatura e umidade'], ['elet', 'Tensão e corrente'], ['com_ele', 'Comissionamento · motor (correntes, isolação, rotação)'], ['com_hid', 'Comissionamento · hidráulica'], ['com_psi', 'Comissionamento · psicrometria e capacidade'], ['com_fri', 'Comissionamento · circuito frigorífico'], ['plaqueta', 'Plaqueta do equipamento']];
 const SEL_DEFAULT = {hvac: ['vaz', 'filtro', 'amb', 'plaqueta'], tabhid: ['hid']};
-const ROTEIROS = {hvac: ['vaz', 'hid', 'filtro', 'amb', ...ELET, 'plaqueta']};
+const ROTEIROS = {hvac: ['vaz', 'hid', 'filtro', 'amb', ...ELET, 'com_ele', 'com_hid', 'com_psi', 'com_fri', 'plaqueta']};
 const stepDef = key => HVAC_STEPS.find(s => key === s.key || (s.rep && (key || '').startsWith(s.key + '_')));
 const selOf = p => p?.stepsSel || SEL_DEFAULT[p?.template] || SEL_DEFAULT.hvac;
 function guideSteps(items, p){
@@ -1542,7 +1554,7 @@ async function renderGuide(){
     <div class="gsec">${esc(s.sec)} · <span class="st-${state}">${ST_LABEL[state]}</span></div><div class="savechip" data-save></div>
     <div class="gq">${esc(s.q)}</div>
     ${state === 'na' ? `<div class="panel"><b>Não se aplica.</b> ${esc(it.naWhy || '')}<br><button class="text-btn" data-act="na-undo" data-key="${s.key}">Desfazer “não se aplica”</button></div>` : `
-    ${s.fields ? `<div class="panel">${gfieldsHtml(s, fl, ref)}</div>` : ''}
+    ${s.fields ? `<div class="panel">${gfieldsHtml(s, fl, ref)}${/^com_/.test(s.key) ? `<div class="comcalc" data-for="${s.key}" data-rot="${esc(fl.rot || '')}">${commRows(s.key, fl)}</div>` : ''}</div>` : ''}
     <div class="panel"><span class="lb">Foto da medição ${phs.length ? `(${phs.length})` : ''}</span>
       ${phs.length ? `<div class="gph">${phs.map(ph => `<div class="gphi"><img src="${phSrc(ph, true)}" alt="" data-act="phedit" data-id="${ph.id}"><span>${esc(phRead(ph) || 'Toque para registrar')}</span></div>`).join('')}</div>` : '<p class="hint" style="margin:0 0 8px">Use o botão da câmera abaixo ou escolha da galeria.</p>'}
       <button class="text-btn" data-act="gal-step" data-key="${s.key}">${I.img}Escolher da galeria</button></div>
@@ -2679,6 +2691,18 @@ async function makeReport(o){
           const rds = phOf(e, am).filter(q => q.rv || q.rur).map(q => `${q.note ? q.note + ': ' : ''}${q.rv || '—'} °C · ${q.rur || '—'} %UR (foto ${labels.get(q.id)})`);
           if (!rds.length) rds.push(f.v || f.ur ? `Temperatura: ${f.v || '—'} °C · Umidade: ${f.ur || '—'} %` : 'Condições: ' + lab(am));
           rds.forEach(t => { need(8); T(t, M, y, {s:10}); y += 5.5; }); y += 4; }
+        const coms = ['com_ele', 'com_hid', 'com_psi', 'com_fri'].map(byStep).filter(i => i && (phOf(e, i).length || Object.values(i.fields || {}).some(v => String(v || '').trim())));
+        if (coms.length) {
+          need(30); y = sec('Folha de comissionamento', y);
+          for (const it of coms) { const d = stepDef(it.step), f = it.fields || {}, rows = (d.fields || []).filter(x => String(f[x.k] || '').trim()).map(x => [x.l, f[x.k] + (x.u ? ' ' + x.u : ''), null]).concat(commCalc(it.step, f));
+            if (!rows.length) continue; need(10 + rows.length * 6);
+            T(d.t.toUpperCase(), M + 2, y, {s:8, b:true, c:NAVY}); doc.setDrawColor(29, 34, 41); doc.line(M, y + 1.8, W - M, y + 1.8); y += 6;
+            rows.forEach(([l, v, st]) => { T(l, M + 2, y, {s:9}); T(v, M + 110, y, {s:9, b: !!st, c: st === 'ok' ? GRN : st === 'bad' ? RED : [29, 34, 41]});
+              if (st) T(st === 'ok' ? 'OK' : 'Fora', W - M - 2, y, {s:8.5, b:true, c: st === 'ok' ? GRN : RED, a:'right'});
+              doc.setDrawColor(...LN); doc.line(M, y + 2.2, W - M, y + 2.2); y += 6; });
+            const pp = phOf(e, it)[0]; if (pp) { T('Foto: ' + labels.get(pp.id), M + 2, y, {s:7.5, c:MUT}); y += 4; }
+            y += 3; }
+        }
         const el = ['v_rs', 'v_st', 'v_tr', 'i_r', 'i_s', 'i_t'].map(byStep).filter(i => i && (phOf(e, i).length || i.fields?.v));
         if (el.length) { need(16 + el.length * 7); y = sec('Elétrica do motor', y);
           [['Medição', 0], ['Valor', 70], ['Foto', 110]].forEach(([t, dx]) => T(t.toUpperCase(), M + 2 + dx, y, {s:7.5, b:true, c:MUT})); doc.line(M, y + 2, W - M, y + 2); y += 7;
@@ -3090,6 +3114,32 @@ async function renderObra(){
     if (im.complete) go2(); else im.onload = go2;
   }
 }
+
+/* ---------- comissionamento: cálculos e folha ---------- */
+function commCalc(key, f){
+  const n = v => numVal(v), out = [], f1 = (v, d = 1) => v.toFixed(d).replace('.', ',');
+  if (key === 'com_ele') {
+    const I = ['ir', 'is', 'it'].map(k => n(f[k])).filter(v => v !== null), inom = n(f.in);
+    if (I.length === 3) { const m = I.reduce((a, b) => a + b) / 3, d = Math.max(...I.map(v => Math.abs(v - m))) / m * 100; out.push(['Desequilíbrio de corrente', f1(d) + '%', d <= 10 ? 'ok' : 'bad']); }
+    if (I.length && inom) { const mx = Math.max(...I), p = mx / inom * 100; out.push(['Maior corrente / nominal', f1(p, 0) + '%', p <= 100 ? 'ok' : 'bad']); }
+    if (n(f.iso) !== null) out.push(['Isolação', f1(n(f.iso), 1) + ' MΩ', n(f.iso) >= 1 ? 'ok' : 'bad']);
+    if (f.rot) out.push(['Sentido de rotação', f.rot, f.rot === 'OK' ? 'ok' : 'bad']);
+  }
+  if (key === 'com_hid') {
+    if (n(f.pe) !== null && n(f.ps) !== null) out.push(['Diferença de pressão (entrada − saída)', f1(n(f.pe) - n(f.ps), 2) + ' bar']);
+    if (n(f.te) !== null && n(f.ts) !== null) { const dt = Math.abs(n(f.ts) - n(f.te)); out.push(['ΔT da água', f1(dt) + ' °C']);
+      if (n(f.qw)) { const kw = 1.163 * n(f.qw) * dt; out.push(['Capacidade (lado água)', f1(kw) + ' kW · ' + f1(kw / 3.517) + ' TR']); } }
+  }
+  if (key === 'com_psi') {
+    if (n(f.tbse) !== null && n(f.tbss) !== null) { const dt = n(f.tbse) - n(f.tbss); out.push(['ΔTBS (entrada − saída)', f1(dt) + ' °C']);
+      if (n(f.q)) { const kw = 1.207 * n(f.q) / 3600 * Math.abs(dt); out.push(['Capacidade sensível (lado ar)', f1(kw) + ' kW · ' + f1(kw / 3.517) + ' TR']); } }
+  }
+  return out;
+}
+const commRows = (key, f) => commCalc(key, f).map(r => `<div class="comrow"><span>${esc(r[0])}</span><b class="${r[2] ? 'c-' + r[2] : ''}">${esc(r[1])}</b></div>`).join('');
+document.addEventListener('input', e => { const el = e.target; if (!el.classList || !el.classList.contains('gf') || !/^com_/.test(el.dataset.key || '')) return;
+  const key = el.dataset.key, box = document.querySelector(`.comcalc[data-for="${key}"]`); if (!box) return;
+  const f = {rot: box.dataset.rot}; document.querySelectorAll(`.gf[data-key="${key}"]`).forEach(x => { f[x.dataset.k] = x.value; }); box.innerHTML = commRows(key, f); });
 /* ---------- empresa ---------- */
 async function companySheet(pid){
   const c = await getCompany(pid);
